@@ -109,7 +109,7 @@ const RULES = [
     pattern: /\bcontractors?\b/i,
     message: 'Say "Professional", never "contractor".',
     // "contract" and "smart contract" are fine; only the person-noun is banned.
-    appliesTo: ({ line, isComment }) => !isImportLine(line),
+    appliesTo: ({ line }) => !isImportLine(line),
   },
 
   // ── Commonwealth English ───────────────────────────────────────────────────
@@ -187,6 +187,9 @@ const RULES = [
     pattern: /["'`]\s*(No data|No results|Something went wrong|Click here)\s*["'`]/i,
     message:
       'Generic filler. Every EmptyState and error writes surface-specific copy (v2/02 §2.5).',
+    // Exempt comments: the EmptyState component's own docs quote "No results" as
+    // the example of what NOT to write. Prose about a rule is not a breach of it.
+    appliesTo: ({ isComment }) => isComment !== true,
   },
 
   // ── Currency ───────────────────────────────────────────────────────────────
@@ -222,7 +225,7 @@ const RULES = [
     id: 'design/transition-all',
     pattern: /transition-all|transition:\s*all/,
     message: 'Only transform and opacity animate, via named properties (DESIGN.md §5).',
-    appliesTo: ({ line, isComment }) => isComment !== true,
+    appliesTo: ({ isComment }) => isComment !== true,
   },
   {
     id: 'design/literal-hex',
@@ -238,13 +241,13 @@ const RULES = [
     id: 'design/literal-slate',
     pattern: /\b(?:bg|text|border|ring|divide)-(?:slate|gray|grey|zinc|neutral|stone)-\d{2,3}\b/,
     message: 'Semantic tokens only: bg-card, text-body, text-muted, border-border (DESIGN.md §1).',
-    appliesTo: ({ line, isComment }) => isComment !== true,
+    appliesTo: ({ isComment }) => isComment !== true,
   },
   {
     id: 'design/bg-white',
     pattern: /\bbg-white\b/,
     message: 'Use bg-card. bg-white has no dark-mode counterpart.',
-    appliesTo: ({ line, isComment }) => isComment !== true,
+    appliesTo: ({ isComment }) => isComment !== true,
   },
   {
     id: 'design/violet',
