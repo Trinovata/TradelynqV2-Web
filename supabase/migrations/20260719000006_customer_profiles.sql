@@ -41,11 +41,20 @@ CREATE TABLE public.customer_profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT customer_connection_count_non_negative CHECK (connection_count >= 0),
-  -- A verified KYC record must record who verified it and when. Without this,
-  -- "verified" is unfalsifiable and the audit trail has a hole.
+  -- A verified KYC record must record WHEN it was verified.
+  --
+  -- Deliberately requires `kyc_verified_at` only, NOT `kyc_verified_by`. An
+  -- earlier version required both, which was a real bug found by testing account
+  -- deletion: `kyc_verified_by` is ON DELETE SET NULL, so closing a former
+  -- admin's account violated this constraint on every customer they had ever
+  -- verified. The deletion failed outright and the admin became undeletable —
+  -- which is also a data-protection problem, since a person who cannot be
+  -- deleted cannot exercise erasure.
+  --
+  -- Attribution degrades to NULL here; the durable record of WHO decided lives
+  -- in admin_audit_log, which is append-only and holds no FK to profiles.
   CONSTRAINT customer_kyc_verified_is_attributable CHECK (
-    kyc_status <> 'verified'
-    OR (kyc_verified_at IS NOT NULL AND kyc_verified_by IS NOT NULL)
+    kyc_status <> 'verified' OR kyc_verified_at IS NOT NULL
   ),
   CONSTRAINT customer_kyc_rejection_has_reason CHECK (
     kyc_status <> 'rejected' OR kyc_rejection_reason IS NOT NULL

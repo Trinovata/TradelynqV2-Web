@@ -65,11 +65,16 @@ CREATE TABLE public.reviews (
   CONSTRAINT review_testimonial_length CHECK (
     char_length(testimonial) BETWEEN 20 AND 600
   ),
-  -- A moderation decision with no moderator and no timestamp is unauditable,
-  -- and the dispute workflow needs to know who to ask.
+  -- A moderation decision with no timestamp is unauditable.
+  --
+  -- Deliberately requires `moderated_at` only, NOT `moderated_by`. moderated_by
+  -- is ON DELETE SET NULL, so requiring it would mean closing a former
+  -- moderator's account violates this constraint on every review they ever
+  -- touched — the account deletion fails outright and the person cannot leave.
+  -- Attribution degrades to NULL; the durable record of WHO decided lives in
+  -- admin_audit_log, which is append-only and does not reference profiles.
   CONSTRAINT review_moderation_is_attributable CHECK (
-    status = 'pending'
-    OR (moderated_at IS NOT NULL AND moderated_by IS NOT NULL)
+    status = 'pending' OR moderated_at IS NOT NULL
   ),
   CONSTRAINT review_rejection_has_reason CHECK (
     status <> 'rejected' OR rejection_reason IS NOT NULL
@@ -247,6 +252,13 @@ CREATE POLICY reviews_insert_own_customer ON public.reviews
   FOR INSERT TO authenticated
   WITH CHECK (customer_id = (SELECT auth.uid()));
 
+-- Admins insert seeded reviews on a professional's behalf — a real client from
+-- before the platform, telephoned and confirmed. Without this policy `is_seeded`
+-- would be a column nothing could ever set through a user session.
+CREATE POLICY reviews_insert_admin ON public.reviews
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
 -- The author may correct their own wording while it is still pending. Once
 -- moderated the text is evidence and stops being editable (guard below).
 CREATE POLICY reviews_update_own_customer ON public.reviews
@@ -363,11 +375,14 @@ CREATE TABLE public.disputes (
   -- written as a constraint so it holds regardless of which client closes it.
   -- The 10-character floor matches the console's textarea minimum: "ok" is not
   -- a resolution either party can appeal against.
+  --
+  -- `resolved_by` is deliberately absent from this check for the same reason as
+  -- reviews.moderated_by above: it is ON DELETE SET NULL, and requiring it would
+  -- make closing a former admin's account fail against every case they resolved.
   CONSTRAINT dispute_resolution_is_complete CHECK (
     status NOT IN ('resolved', 'closed')
     OR (resolution IS NOT NULL
         AND char_length(resolution) >= 10
-        AND resolved_by IS NOT NULL
         AND resolved_at IS NOT NULL)
   ),
   -- A fake-review dispute with no review attached cannot be investigated.

@@ -214,6 +214,73 @@ BEGIN
   RAISE NOTICE 'PASS 8 — updated_at is trigger-maintained everywhere';
 END $$;
 
+-- ── 9. No client role holds TRUNCATE ────────────────────────────────────────
+-- CRITICAL. Row Level Security does NOT apply to TRUNCATE. A role holding it can
+-- destroy every row in a table with all policies in place and RLS both enabled
+-- and forced. This was verified empirically against this schema: `anon` could
+-- TRUNCATE customer_profiles CASCADE while entirely unauthenticated.
+--
+-- The grant comes from Supabase's bootstrap defaults, so it returns by default
+-- on any new table unless ALTER DEFAULT PRIVILEGES is also set. This check is
+-- what makes the fix durable.
+
+DO $$
+DECLARE
+  offenders TEXT;
+BEGIN
+  SELECT string_agg(DISTINCT grantee || ' on ' || table_name, ', ') INTO offenders
+    FROM information_schema.role_table_grants
+   WHERE table_schema = 'public'
+     AND privilege_type = 'TRUNCATE'
+     AND grantee IN ('anon', 'authenticated', 'service_role');
+
+  ASSERT offenders IS NULL,
+    'CRITICAL — client roles hold TRUNCATE (RLS does not apply to it): ' || offenders ||
+    E'\n  See migration 20260719999999_harden_grants.sql.';
+
+  RAISE NOTICE 'PASS 9 — no client role can TRUNCATE';
+END $$;
+
+-- ── 10. No client role holds TRIGGER ────────────────────────────────────────
+-- The column guards bypass at pg_trigger_depth() > 1 so platform triggers can
+-- maintain derived columns. That bypass is safe only while clients cannot reach
+-- trigger depth, and TRIGGER privilege is exactly that reachability.
+
+DO $$
+DECLARE
+  offenders TEXT;
+BEGIN
+  SELECT string_agg(DISTINCT grantee || ' on ' || table_name, ', ') INTO offenders
+    FROM information_schema.role_table_grants
+   WHERE table_schema = 'public'
+     AND privilege_type = 'TRIGGER'
+     AND grantee IN ('anon', 'authenticated');
+
+  ASSERT offenders IS NULL,
+    'Client roles hold TRIGGER, which makes the guard bypass reachable: ' || offenders;
+
+  RAISE NOTICE 'PASS 10 — no client role can attach triggers';
+END $$;
+
+-- ── 11. anon holds no write privilege ───────────────────────────────────────
+-- Public write paths (guest enquiry, prelaunch signup) go through an API route
+-- with a server-side client. The anon key never writes directly.
+
+DO $$
+DECLARE
+  offenders TEXT;
+BEGIN
+  SELECT string_agg(DISTINCT privilege_type || ' on ' || table_name, ', ') INTO offenders
+    FROM information_schema.role_table_grants
+   WHERE table_schema = 'public'
+     AND grantee = 'anon'
+     AND privilege_type IN ('INSERT', 'UPDATE', 'DELETE');
+
+  ASSERT offenders IS NULL, 'anon holds write privileges: ' || offenders;
+
+  RAISE NOTICE 'PASS 11 — anon is read-only';
+END $$;
+
 \echo ''
 \echo '================================================'
 \echo ' schema invariants: ALL CHECKS PASSED'
