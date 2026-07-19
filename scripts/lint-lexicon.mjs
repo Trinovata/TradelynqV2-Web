@@ -43,11 +43,47 @@ const isImportLine = (line) => /^\s*(import|export)\s/.test(line)
 const isUrlLine = (line) => /https?:\/\//.test(line)
 
 /**
- * A line that is only a comment. Used by rules that govern *rendered output*
- * specifically — an emoji in a JSDoc block is not an emoji in the UI, and flagging it
- * teaches contributors that the linter is wrong, which is how linters get muted.
+ * Whether a line is comment-only. Used by rules that govern *rendered output*
+ * specifically — an emoji in a JSDoc block is not an emoji in the UI, and a doc
+ * comment explaining why `transition: all` is banned must be able to write those
+ * words. Flagging either teaches contributors the linter is wrong, which is how
+ * linters get muted.
+ *
+ * Set per line by the scanner, which tracks block-comment state: a CSS or JSDoc
+ * block spans many lines and its continuation lines carry no `*` prefix, so a
+ * per-line regex alone misses most of a block comment's body.
  */
-const isCommentLine = (line) => /^\s*(\/\/|\/\*|\*\/?|#)/.test(line)
+function markCommentLines(lines) {
+  const flags = new Array(lines.length).fill(false)
+  let inBlock = false
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim()
+
+    if (inBlock) {
+      flags[index] = true
+      // Reopening on the same line after a close keeps us inside.
+      if (trimmed.includes('*/')) {
+        inBlock = trimmed.lastIndexOf('/*') > trimmed.lastIndexOf('*/')
+      }
+      return
+    }
+
+    if (/^(\/\/|#)/.test(trimmed)) {
+      flags[index] = true
+      return
+    }
+
+    const opensBlock = trimmed.indexOf('/*')
+    if (opensBlock !== -1) {
+      // Comment-only if nothing precedes the opener on this line.
+      flags[index] = opensBlock === 0
+      inBlock = trimmed.lastIndexOf('/*') > trimmed.lastIndexOf('*/')
+    }
+  })
+
+  return flags
+}
 
 /** @type {Rule[]} */
 const RULES = [
@@ -73,7 +109,7 @@ const RULES = [
     pattern: /\bcontractors?\b/i,
     message: 'Say "Professional", never "contractor".',
     // "contract" and "smart contract" are fine; only the person-noun is banned.
-    appliesTo: ({ line }) => !isImportLine(line),
+    appliesTo: ({ line, isComment }) => !isImportLine(line),
   },
 
   // ── Commonwealth English ───────────────────────────────────────────────────
@@ -165,38 +201,50 @@ const RULES = [
     // version and it produced 12 false positives against zero real ones.
     pattern: /\$\s*\d|\$\$\{/,
     message: 'Money renders as "TTD $X,XXX" via formatTTD(). Never a bare $ in UI copy.',
-    appliesTo: ({ line }) =>
+    appliesTo: ({ line, isComment }) =>
       !/TTD/.test(line) &&
       !isImportLine(line) &&
       !isUrlLine(line) &&
       !/formatTTD/.test(line) &&
+      // Prose about the rule is not a breach of it — the doc comment on
+      // formatTTD necessarily quotes a bare "$2,100" to explain why it is banned.
+      isComment !== true &&
       // Regex character classes and shell-style vars legitimately contain `$`.
       !/\$\d\s*[|)\]]/.test(line),
   },
 
   // ── Design system: banned utilities ────────────────────────────────────────
+  // The design rules below govern rendered output, so comments are exempt: a
+  // doc comment that explains why `transition: all` is banned must be able to
+  // write the words `transition: all`. Flagging that teaches contributors the
+  // linter is wrong, which is how linters get muted.
   {
     id: 'design/transition-all',
     pattern: /transition-all|transition:\s*all/,
     message: 'Only transform and opacity animate, via named properties (DESIGN.md §5).',
+    appliesTo: ({ line, isComment }) => isComment !== true,
   },
   {
     id: 'design/literal-hex',
     pattern: /#[0-9a-fA-F]{3,8}\b/,
     message: 'Semantic tokens only — no literal hex in components. Define it in globals.css.',
     // Token definitions live in CSS; the ban is on components consuming raw values.
-    appliesTo: ({ ext, path }) =>
-      CODE_EXTENSIONS.has(ext) && (path.startsWith('components') || path.startsWith('app')),
+    appliesTo: ({ ext, path, isComment }) =>
+      CODE_EXTENSIONS.has(ext) &&
+      (path.startsWith('components') || path.startsWith('app')) &&
+      isComment !== true,
   },
   {
     id: 'design/literal-slate',
     pattern: /\b(?:bg|text|border|ring|divide)-(?:slate|gray|grey|zinc|neutral|stone)-\d{2,3}\b/,
     message: 'Semantic tokens only: bg-card, text-body, text-muted, border-border (DESIGN.md §1).',
+    appliesTo: ({ line, isComment }) => isComment !== true,
   },
   {
     id: 'design/bg-white',
     pattern: /\bbg-white\b/,
     message: 'Use bg-card. bg-white has no dark-mode counterpart.',
+    appliesTo: ({ line, isComment }) => isComment !== true,
   },
   {
     id: 'design/violet',
@@ -207,10 +255,10 @@ const RULES = [
     id: 'design/emoji-in-ui',
     pattern: /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u,
     message: 'No emoji in UI (the anti-slop covenant). Use a lucide icon.',
-    appliesTo: ({ ext, path, line }) =>
+    appliesTo: ({ ext, path, isComment }) =>
       CODE_EXTENSIONS.has(ext) &&
       (path.startsWith('components') || path.startsWith('app')) &&
-      !isCommentLine(line),
+      isComment !== true,
   },
 ]
 
@@ -252,12 +300,15 @@ function scan() {
     const path = relative(ROOT, file).replace(/\\/g, '/')
     const ext = extname(file)
     const lines = readFileSync(file, 'utf8').split(/\r?\n/)
+    const commentFlags = markCommentLines(lines)
 
     lines.forEach((line, index) => {
       if (hasValidOptOut(line)) return
 
+      const isComment = commentFlags[index] === true
+
       for (const rule of RULES) {
-        if (rule.appliesTo && !rule.appliesTo({ ext, line, path })) continue
+        if (rule.appliesTo && !rule.appliesTo({ ext, line, path, isComment })) continue
         if (!rule.pattern.test(line)) continue
 
         violations.push({
