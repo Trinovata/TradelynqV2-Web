@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:policies": "node scripts/test-policies.mjs",
+    "lint:lexicon": "node scripts/lint-lexicon.mjs",
+    "db:reset": "supabase db reset",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

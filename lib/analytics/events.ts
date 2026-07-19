@@ -58,8 +58,17 @@ export type SignupRole = 'customer' | 'professional'
 
 export type SearchSort = 'recommended' | 'highest_rated' | 'most_reviewed'
 
-/** Availability filter values, as carried in the search URL params. */
-export type Availability = 'full_time' | 'part_time' | 'weekends' | 'emergency'
+/**
+ * Availability filter values, as carried in the search URL params.
+ *
+ * These are the members of the `availability_type` Postgres enum, not a guess:
+ * the analytics dictionary shows only `full_time` and no chapter enumerates the
+ * rest, but V1's schema has carried the full set all along. Code is truth for
+ * what exists; the enum was the answer.
+ *
+ * Must stay in lockstep with `availability_type` in the enums migration.
+ */
+export type Availability = 'full_time' | 'part_time' | 'project_based' | 'by_appointment'
 
 export type SuggestionKind = 'professional' | 'category' | 'area' | 'recent'
 
