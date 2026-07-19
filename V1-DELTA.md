@@ -12,7 +12,7 @@ Kept current every session a surface changes — it is a first-class deliverable
 
 | Surface | V1 | V2 | State |
 |---|---|---|---|
-| Foundations (repo, tooling, CI) | — | in progress | Phase 0 |
+| Foundations (repo, tooling, CI) | — | **complete** | Phase 0 done except account-blocked steps |
 | Database spine | live | not started | Phase 1 |
 | Auth & access layer | live | not started | Phase 2 |
 | Design system & primitives | partial | not started | Phase 3 |
@@ -66,6 +66,37 @@ V1's warm-white + cyan-forward system moves to a cooler neutral: off-white `#F7F
 
 **Ask for testers:** does the navy-primary interface feel more premium, or less obviously clickable than V1's cyan? This is the single highest-risk visual change and the 28 July decision depends on it.
 
+### ⬆ CSP tightened — two allow-listed origins removed as dead
+
+V1's Content Security Policy allow-listed two origins that were doing nothing:
+
+| Origin | V1 | Finding |
+|---|---|---|
+| `*.pusher.com` + `wss://*.pusher.com` | allow-listed for "real-time features" | A repo-wide search finds Pusher **only** in `next.config.mjs` and the docs. No realtime feature exists anywhere in the codebase. |
+| `https://graph.facebook.com` | allow-listed for WhatsApp | The WhatsApp Cloud API is real, but it is called from **server** routes (`lib/whatsapp/client.ts`). CSP `connect-src` governs **browser** requests — a server-side fetch was never subject to it. The entry never had any effect. |
+
+Also dropped: `fonts.googleapis.com` / `fonts.gstatic.com` (V2 self-hosts both faces, so there is no third-party font request), and `images.unsplash.com` / `i.pravatar.cc`, which V1 used for placeholder professionals and fake avatars.
+
+An allow-listed origin is an obligation, not a convenience — it is attack surface someone must keep justifying.
+
+V2 additionally sets `frame-ancestors 'none'`, `X-Frame-Options: DENY` (V1 used the weaker `SAMEORIGIN`), and `Cross-Origin-Opener-Policy: same-origin`, and removes the `X-Powered-By` fingerprint.
+
+### ⛔ Placeholder and fake supply designed out
+
+V1 rendered demo professionals from Unsplash and fake reviewer avatars from pravatar. V2 cannot: those origins are not in the image allow-list, and the catalogue **degrades below its threshold rather than inventing content** (v2/03 §3.6).
+
+**Ask for testers:** in a thin category, V2 shows fewer real professionals where V1 showed a full-looking grid. Does the honest empty state read as trustworthy, or as a broken page?
+
+### ⬆ Error responses are actionable by construction
+
+V1 returned ad-hoc error strings. V2's taxonomy types each code's `details` payload, so the compiler refuses an error that does not carry what the client needs to render the fix — `LEGAL_ACCEPTANCE_REQUIRED` must name the outstanding documents, `INSUFFICIENT_CREDITS` must carry the balance and where to buy more.
+
+`INTERNAL` deliberately accepts no details at all, so raw database errors have no channel to reach a client. Postgres error text describes schema.
+
+### ⬆ Sentry Session Replay deliberately not enabled
+
+V1 has no replay either, but V2 records the reason so it is not switched on casually: this platform renders identity documents, KYC selfies, and payment state. Replay would create a second copy of exactly the data the platform is obliged to protect.
+
 ### ⚠ Docs corpus not vendored into the repo
 
 Deferred from S014 pending a source-of-truth decision — see [`docs/README.md`](./docs/README.md). Specs are read from `../TradeLynq-Docs/`; there is exactly one copy.
@@ -78,3 +109,4 @@ Collected as surfaces land. Current set:
 
 1. Does navy-as-interactive read as clickable? (R2 palette)
 2. Does the static catalogue read as calm or as broken? (ambient motion removal)
+3. In a thin category, does the honest empty state read as trustworthy or as broken? (fake supply removed)
