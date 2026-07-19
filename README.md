@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TradeLynq V2 — Web Platform
 
-## Getting Started
+The V2 website + API, built ground-up per `docs/REBUILD-PLAYBOOK.md` against the specs in `../TradeLynq-Docs`. The original app lives in `../Tradelynq` — **reference only: read it, never modify it.**
 
-First, run the development server:
+- **Build state:** the playbook's tick-boxes (`../Tradelynq/docs/REBUILD-PLAYBOOK.md`)
+- **Session protocol:** `../MASTER-PROMPT.md`
+- **V1 comparison log:** [`V1-DELTA.md`](./V1-DELTA.md) — kept current as surfaces land
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript strict |
+| Database / Auth | Supabase (PostgreSQL + RLS + Auth + Storage) |
+| Styling | Tailwind CSS v4 + CVA, semantic tokens only |
+| Forms | react-hook-form + zod |
+| Payments | Stripe (subscriptions), WiPay (one-time) |
+| Email | Resend |
+| Rate limiting | Upstash Redis (**fail-closed** on sensitive routes) |
+| Observability | Sentry + PostHog |
+
+## Commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev         # local dev server
+npm run typecheck   # tsc --noEmit — must be clean before any commit
+npm run lint        # eslint — must be clean before any commit
+npm run build       # production build — required for production-facing work
+npm run format      # prettier
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Working rules (short form)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Commonwealth English · money as `TTD $X,XXX` via `formatTTD()` · people are **Customers** and **Professionals** (never "service providers", "tradespeople", "contractors", "gig workers") · semantic tokens only, never literal hex in components · every migration RLS-enabled, forced, with policies in the same file · route order: rate-limit → auth/gate → legal → zod → RLS client · loading/empty/error states on every data surface · mobile-first at 375px, both themes first-class.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Full canon: `../First Shot Resources/skills/first-shot/SKILL.md`. Constitution: `../First Shot Resources/skills/operating-manual/SKILL.md`.
