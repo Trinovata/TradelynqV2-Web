@@ -314,6 +314,14 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Foreign-key actions (enquiry_id ON DELETE SET NULL) arrive at depth > 1;
+  -- client statements run at depth 1. Note bookings_reset_reminders is a BEFORE
+  -- trigger on this same statement, so it does NOT raise the depth — the flag
+  -- check below still sees exactly what the client submitted.
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
   IF NEW.reminder_24h_sent IS DISTINCT FROM OLD.reminder_24h_sent
      OR NEW.reminder_1h_sent IS DISTINCT FROM OLD.reminder_1h_sent THEN
     RAISE EXCEPTION 'Reminder flags are set by the scheduler.'

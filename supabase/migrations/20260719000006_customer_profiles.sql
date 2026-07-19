@@ -63,6 +63,9 @@ CREATE INDEX customer_profiles_user_id_idx ON public.customer_profiles (user_id)
 -- Partial: the admin KYC queue only ever reads rows awaiting a decision.
 CREATE INDEX customer_profiles_kyc_queue_idx ON public.customer_profiles (kyc_submitted_at)
   WHERE kyc_status IN ('pending', 'submitted');
+-- ON DELETE SET NULL: removing an admin profile scans every customer without this.
+CREATE INDEX customer_profiles_kyc_verified_by_idx ON public.customer_profiles (kyc_verified_by)
+  WHERE kyc_verified_by IS NOT NULL;
 
 CREATE TRIGGER customer_profiles_updated_at
   BEFORE UPDATE ON public.customer_profiles

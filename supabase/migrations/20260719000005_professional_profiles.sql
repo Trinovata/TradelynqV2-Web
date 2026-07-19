@@ -179,6 +179,16 @@ CREATE INDEX professional_profiles_ranking_idx
   ON public.professional_profiles (average_rating DESC NULLS LAST, review_count DESC)
   WHERE listing_status = 'active';
 
+-- Admin-reference FKs. Rarely queried directly, but both are ON DELETE SET NULL,
+-- so removing an admin profile scans every professional row without these.
+-- Partial, since the vast majority of rows are unverified and NULL.
+CREATE INDEX professional_profiles_national_id_verified_by_idx
+  ON public.professional_profiles (national_id_verified_by)
+  WHERE national_id_verified_by IS NOT NULL;
+CREATE INDEX professional_profiles_insurance_verified_by_idx
+  ON public.professional_profiles (insurance_verified_by)
+  WHERE insurance_verified_by IS NOT NULL;
+
 -- ── Triggers ────────────────────────────────────────────────────────────────
 
 CREATE TRIGGER professional_profiles_updated_at

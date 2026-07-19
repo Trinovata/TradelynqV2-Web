@@ -385,6 +385,12 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Foreign-key actions (category_id ON DELETE SET NULL) and any future
+  -- platform trigger arrive at depth > 1. Client statements run at depth 1.
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
   -- Re-pointing an enquiry rewrites who asked and who was asked.
   IF NEW.customer_id IS DISTINCT FROM OLD.customer_id
      OR NEW.professional_id IS DISTINCT FROM OLD.professional_id THEN

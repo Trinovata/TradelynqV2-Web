@@ -276,6 +276,12 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  -- Foreign-key SET NULL actions (customer_id, moderated_by, job_enquiry_id)
+  -- arrive as UPDATEs at depth > 1. Refusing them would block account deletion.
+  IF pg_trigger_depth() > 1 THEN
+    RETURN NEW;
+  END IF;
+
   -- Self-moderation is the whole ballgame: a customer who could set
   -- status = 'approved' publishes straight onto a professional's storefront.
   IF NEW.status IS DISTINCT FROM OLD.status
@@ -378,6 +384,9 @@ CREATE INDEX disputes_customer_idx ON public.disputes (customer_id);
 CREATE INDEX disputes_raised_by_idx ON public.disputes (raised_by);
 CREATE INDEX disputes_review_idx ON public.disputes (review_id);
 CREATE INDEX disputes_enquiry_idx ON public.disputes (enquiry_id);
+-- ON DELETE SET NULL: removing an admin profile scans every dispute without this.
+CREATE INDEX disputes_resolved_by_idx ON public.disputes (resolved_by)
+  WHERE resolved_by IS NOT NULL;
 -- Partial: the admin queue is age-ordered over open cases only, and the
 -- median-resolution-time metric reads the closed set separately.
 CREATE INDEX disputes_open_queue_idx ON public.disputes (created_at)
@@ -437,6 +446,13 @@ SET search_path = ''
 AS $$
 BEGIN
   IF (SELECT auth.uid()) IS NULL OR public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  -- Foreign-key SET NULL actions (customer_id, review_id, enquiry_id,
+  -- resolved_by) arrive as UPDATEs at depth > 1; refusing them would block
+  -- account deletion.
+  IF pg_trigger_depth() > 1 THEN
     RETURN NEW;
   END IF;
 
@@ -510,6 +526,15 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
+  -- Foreign-key actions are implemented as internal triggers, so a cascade from
+  -- a deleted dispute, or the ON DELETE SET NULL on author_id when an admin's
+  -- account is closed, arrives here as an UPDATE/DELETE at trigger depth > 1.
+  -- Blocking those would make account deletion fail outright. A direct
+  -- statement from any client runs at depth 1 and is still refused.
+  IF pg_trigger_depth() > 1 THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
   RAISE EXCEPTION 'Case notes are append-only. Add a correcting note instead.'
     USING ERRCODE = 'insufficient_privilege';
 END;
@@ -524,7 +549,7 @@ CREATE TRIGGER case_notes_reject_delete
   FOR EACH ROW EXECUTE FUNCTION public.reject_case_note_mutation();
 
 COMMENT ON FUNCTION public.reject_case_note_mutation() IS
-  'Hard-stops UPDATE and DELETE on case_notes for every role. Cascade from a deleted dispute still works — the constraint fires on the referencing row''s own delete, which is what a BEFORE DELETE trigger blocks, so disputes are never hard-deleted (no DELETE policy).';
+  'Hard-stops direct UPDATE and DELETE on case_notes for every role including service-role. Foreign-key cascades (depth > 1) pass, so account deletion still works.';
 
 ALTER TABLE public.case_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.case_notes FORCE ROW LEVEL SECURITY;
