@@ -101,12 +101,21 @@ const PRODUCTION_REQUIRED: ReadonlyArray<{ name: string; consequence: string }> 
     consequence: 'rate limiting cannot authenticate to Redis, so sensitive limiters fail closed',
   },
   { name: 'CRON_SECRET', consequence: 'scheduled endpoints would be publicly invokable' },
-  { name: 'SUPABASE_SERVICE_ROLE_KEY', consequence: 'admin and cron paths cannot reach the database' },
+  {
+    name: 'SUPABASE_SERVICE_ROLE_KEY',
+    consequence: 'admin and cron paths cannot reach the database',
+  },
   { name: 'NEXT_PUBLIC_SUPABASE_URL', consequence: 'the application cannot reach the database' },
   { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', consequence: 'no client can authenticate' },
   { name: 'STRIPE_SECRET_KEY', consequence: 'subscription billing is inoperable' },
-  { name: 'STRIPE_WEBHOOK_SECRET', consequence: 'webhook signatures cannot be verified — forgeable billing events' },
-  { name: 'RESEND_API_KEY', consequence: 'no transactional email sends — silent onboarding and billing failures' },
+  {
+    name: 'STRIPE_WEBHOOK_SECRET',
+    consequence: 'webhook signatures cannot be verified — forgeable billing events',
+  },
+  {
+    name: 'RESEND_API_KEY',
+    consequence: 'no transactional email sends — silent onboarding and billing failures',
+  },
 ]
 
 /**

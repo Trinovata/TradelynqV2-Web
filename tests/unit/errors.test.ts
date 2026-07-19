@@ -65,7 +65,9 @@ describe('error taxonomy — response shape', () => {
   })
 
   it('accepts a message override without disturbing the code', async () => {
-    const body = await bodyOf(err('NOT_FOUND', { resource: 'professional' }, 'No such professional.'))
+    const body = await bodyOf(
+      err('NOT_FOUND', { resource: 'professional' }, 'No such professional.')
+    )
     expect(body.code).toBe('NOT_FOUND')
     expect(body.error).toBe('No such professional.')
   })
@@ -88,7 +90,11 @@ describe('error taxonomy — actionable 4xx payloads', () => {
 
   it('TIER_UPGRADE_REQUIRED names the feature and the tier that unlocks it', async () => {
     const body = await bodyOf(
-      err('TIER_UPGRADE_REQUIRED', { feature: 'crm', currentTier: 'growth', requiredTier: 'studio' })
+      err('TIER_UPGRADE_REQUIRED', {
+        feature: 'crm',
+        currentTier: 'growth',
+        requiredTier: 'studio',
+      })
     )
     expect(body.details).toMatchObject({ feature: 'crm', requiredTier: 'studio' })
   })

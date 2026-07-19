@@ -1,0 +1,42 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: America/Port_of_Spain
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    commit-message:
+      prefix: 'chore(deps)'
+      include: scope
+
+    groups:
+      # Batched so routine patches arrive as one reviewable PR rather than a dozen.
+      patch-and-minor:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+    ignore:
+      # Framework majors are migrations, not dependency bumps — Next 16 already
+      # removed APIs this codebase used. They get a planned upgrade with the release
+      # notes open, never an auto-merged PR.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: tailwindcss
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: 'chore(ci)'

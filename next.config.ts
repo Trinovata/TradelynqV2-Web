@@ -22,11 +22,13 @@ import type { NextConfig } from 'next'
 const PRODUCTION_REQUIRED: ReadonlyArray<{ name: string; consequence: string }> = [
   {
     name: 'UPSTASH_REDIS_REST_URL',
-    consequence: 'rate limiting cannot reach Redis — sensitive limiters would fail closed on every request',
+    consequence:
+      'rate limiting cannot reach Redis — sensitive limiters would fail closed on every request',
   },
   {
     name: 'UPSTASH_REDIS_REST_TOKEN',
-    consequence: 'rate limiting cannot authenticate to Redis — sensitive limiters would fail closed',
+    consequence:
+      'rate limiting cannot authenticate to Redis — sensitive limiters would fail closed',
   },
   { name: 'CRON_SECRET', consequence: 'scheduled endpoints would be publicly invokable' },
   {
@@ -59,7 +61,9 @@ function assertProductionEnvAtBuild(): void {
 
   if (missing.length === 0) return
 
-  const detail = missing.map(({ name, consequence }) => `  ✗ ${name}\n      ${consequence}`).join('\n')
+  const detail = missing
+    .map(({ name, consequence }) => `  ✗ ${name}\n      ${consequence}`)
+    .join('\n')
 
   throw new Error(
     `\n[TradeLynq] Production build refused — ${missing.length} required ` +

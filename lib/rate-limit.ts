@@ -84,7 +84,8 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     limit: 5,
     windowSeconds: 60,
     failureMode: 'closed',
-    rationale: 'Credential stuffing and OTP brute force. Unlimited attempts here compromise accounts.',
+    rationale:
+      'Credential stuffing and OTP brute force. Unlimited attempts here compromise accounts.',
   },
   payment: {
     limit: 10,
@@ -102,13 +103,15 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     limit: 60,
     windowSeconds: 60,
     failureMode: 'closed',
-    rationale: 'Admin actions are high-privilege; a compromised session must not act without bound.',
+    rationale:
+      'Admin actions are high-privilege; a compromised session must not act without bound.',
   },
   enquiry: {
     limit: 3,
     windowSeconds: 60,
     failureMode: 'open',
-    rationale: 'Spam to professionals. Genuine users rarely exceed this; degrade open to protect conversion.',
+    rationale:
+      'Spam to professionals. Genuine users rarely exceed this; degrade open to protect conversion.',
   },
   review: {
     limit: 2,
@@ -120,13 +123,15 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     limit: 30,
     windowSeconds: 60,
     failureMode: 'open',
-    rationale: 'Scraping. A public read path — availability wins; the marketplace must stay browsable.',
+    rationale:
+      'Scraping. A public read path — availability wins; the marketplace must stay browsable.',
   },
   chatbot: {
     limit: 10,
     windowSeconds: 60,
     failureMode: 'open',
-    rationale: 'Model spend per session. Bounded by credits too, so degrading open is not unbounded cost.',
+    rationale:
+      'Model spend per session. Bounded by credits too, so degrading open is not unbounded cost.',
   },
   feedback: {
     limit: 5,
@@ -209,8 +214,7 @@ export function __resetRateLimitCaches(): void {
 // ── The check ────────────────────────────────────────────────────────────────
 
 export type RateLimitOutcome =
-  | { ok: true; remaining: number; degraded: boolean }
-  | { ok: false; response: NextResponse }
+  { ok: true; remaining: number; degraded: boolean } | { ok: false; response: NextResponse }
 
 /** How long to wait before the single retry when Redis errors on a fail-closed route. */
 const RETRY_DELAY_MS = 250

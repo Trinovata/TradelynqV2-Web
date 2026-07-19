@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, prelaunch]
+
+# A newer push to the same branch cancels the older run — reviewers should never be
+# reading results from a commit that has already been superseded.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ── Fast gates, in ascending order of runtime ──────────────────────────────
+  # Split rather than chained so a PR gets every failure at once. One combined job
+  # would report the typecheck error, stop, and hide the four lint errors behind it —
+  # turning one review cycle into two.
+  quality:
+    name: ${{ matrix.check.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - { name: typecheck, command: 'npm run typecheck' }
+          - { name: lint, command: 'npm run lint' }
+          - { name: lexicon, command: 'node scripts/lint-lexicon.mjs' }
+          - { name: unit tests, command: 'npm run test' }
+          - { name: format, command: 'npm run format:check' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: ${{ matrix.check.command }}
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          # Placeholder values: the build must succeed without production secrets.
+          # The production environment assertion is exercised separately below, so a
+          # missing real secret fails the deployment rather than every PR.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+  # Proves the fail-closed guard still has teeth. If someone weakens or deletes the
+  # assertion in next.config.ts, this job goes green when it should be red — so it
+  # asserts the *failure*, and fails when the build unexpectedly succeeds.
+  production-env-guard:
+    name: production env guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Build must refuse when production secrets are absent
+        env:
+          ASSERT_PRODUCTION_ENV: '1'
+        run: |
+          if npm run build; then
+            echo "::error::The production environment assertion did NOT fire."
+            echo "A deployment missing rate-limiter or webhook credentials would boot"
+            echo "with those protections silently disabled. See next.config.ts."
+            exit 1
+          fi
+          echo "Assertion fired as expected — build correctly refused."
+
+  security:
+    name: dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+
+  # ── End-to-end, conditional on secrets ─────────────────────────────────────
+  # Skipped rather than failed when secrets are absent, so forks and Dependabot PRs
+  # are not blocked by credentials they legitimately cannot have.
+  e2e:
+    name: e2e (golden paths)
+    runs-on: ubuntu-latest
+    needs: [quality, build]
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Check for E2E credentials
+        id: creds
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "E2E secrets not configured — skipping. This is expected until playbook S002."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.creds.outputs.available == 'true'
+        run: npm ci
+      - if: steps.creds.outputs.available == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.creds.outputs.available == 'true'
+        run: npm run e2e
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_CUSTOMER_EMAIL: ${{ secrets.TEST_CUSTOMER_EMAIL }}
+          TEST_CUSTOMER_PASSWORD: ${{ secrets.TEST_CUSTOMER_PASSWORD }}
+          TEST_PROFESSIONAL_EMAIL: ${{ secrets.TEST_PROFESSIONAL_EMAIL }}
+          TEST_PROFESSIONAL_PASSWORD: ${{ secrets.TEST_PROFESSIONAL_PASSWORD }}
+
+      - if: always() && steps.creds.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

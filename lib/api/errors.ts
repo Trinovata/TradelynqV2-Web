@@ -189,7 +189,8 @@ export function err(
 ): NextResponse {
   const takesDetails = typeof detailsOrMessage === 'object' && detailsOrMessage !== null
   const details = takesDetails ? detailsOrMessage : undefined
-  const message = (takesDetails ? maybeMessage : (detailsOrMessage as string | undefined)) ?? MESSAGE[code]
+  const message =
+    (takesDetails ? maybeMessage : (detailsOrMessage as string | undefined)) ?? MESSAGE[code]
 
   const body: Record<string, unknown> = { code, error: message }
   if (details !== undefined) body.details = details
