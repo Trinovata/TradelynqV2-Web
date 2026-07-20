@@ -63,6 +63,20 @@ type ErrorDetails = {
   INVALID_INPUT: {
     fieldErrors: Record<string, string[] | undefined>
     formErrors: string[]
+    /**
+     * Remaining tries before the value being checked is destroyed — currently
+     * only phone OTP verification (`details/api-marketplace.md` §1.2).
+     *
+     * Optional so every existing zod-shaped call site stays valid.
+     *
+     * FLAG (S056): snake_case here contradicts the camelCase used by every
+     * other member of this taxonomy (`retryAfterSeconds`, `requiredRoles`).
+     * The API pack specifies `attempts_left` verbatim and the pack is the
+     * client contract, so the wire format wins over local consistency — but the
+     * two conventions should be reconciled platform-wide rather than left to
+     * accumulate. Detail files outrank chapters; nothing yet rules on casing.
+     */
+    attempts_left?: number
   }
 
   /** The resource does not exist, or is not visible to this caller. */

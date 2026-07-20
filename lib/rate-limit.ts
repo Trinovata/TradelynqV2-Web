@@ -55,6 +55,8 @@ export type LimiterKey =
   | 'auth'
   | 'payment'
   | 'kyc'
+  | 'otp_send'
+  | 'otp_verify'
   | 'admin_mutation'
   | 'enquiry'
   | 'review'
@@ -98,6 +100,20 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     windowSeconds: 3600,
     failureMode: 'closed',
     rationale: 'Document flooding into the manual review queue; each submission costs staff time.',
+  },
+  otp_send: {
+    limit: 3,
+    windowSeconds: 3600,
+    failureMode: 'closed',
+    rationale:
+      'Each send costs a WhatsApp message and can be aimed at a number the caller does not own — an unbounded sender is an SMS-bombing tool. 3/hour per the API pack §1.2.',
+  },
+  otp_verify: {
+    limit: 10,
+    windowSeconds: 3600,
+    failureMode: 'closed',
+    rationale:
+      'Backstop under the per-code attempt counter. The counter bounds guesses against ONE code; this bounds guesses across repeatedly re-requested codes.',
   },
   admin_mutation: {
     limit: 60,
