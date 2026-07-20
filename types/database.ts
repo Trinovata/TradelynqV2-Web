@@ -76,6 +76,69 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_grant_presets: {
+        Row: {
+          description: string
+          grants: Json
+          name: string
+          slug: string
+        }
+        Insert: {
+          description: string
+          grants: Json
+          name: string
+          slug: string
+        }
+        Update: {
+          description?: string
+          grants?: Json
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      admin_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          grants: Json
+          level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          grants?: Json
+          level: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          grants?: Json
+          level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_ladder_log: {
         Row: {
           executed_at: string
@@ -2005,6 +2068,65 @@ export type Database = {
           },
         ]
       }
+      registration_cases: {
+        Row: {
+          alternate_names: string[]
+          completed_at: string | null
+          created_at: string
+          fee_ttd: number | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          proposed_business_name: string | null
+          registration_number: string | null
+          status: string
+          submitted_at: string | null
+          track: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alternate_names?: string[]
+          completed_at?: string | null
+          created_at?: string
+          fee_ttd?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          proposed_business_name?: string | null
+          registration_number?: string | null
+          status?: string
+          submitted_at?: string | null
+          track?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alternate_names?: string[]
+          completed_at?: string | null
+          created_at?: string
+          fee_ttd?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          proposed_business_name?: string | null
+          registration_number?: string | null
+          status?: string
+          submitted_at?: string | null
+          track?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registration_cases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -2599,6 +2721,106 @@ export type Database = {
           },
         ]
       }
+      webhook_configs: {
+        Row: {
+          consecutive_failures: number
+          created_at: string
+          disabled_at: string | null
+          disabled_reason: string | null
+          events: string[]
+          id: string
+          is_active: boolean
+          last_success_at: string | null
+          professional_id: string
+          secret_encrypted: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          consecutive_failures?: number
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_success_at?: string | null
+          professional_id: string
+          secret_encrypted: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          consecutive_failures?: number
+          created_at?: string
+          disabled_at?: string | null
+          disabled_reason?: string | null
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_success_at?: string | null
+          professional_id?: string
+          secret_encrypted?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_configs_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_delivery_log: {
+        Row: {
+          attempt: number
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          event_type: string
+          id: string
+          response_excerpt: string | null
+          status_code: number | null
+          succeeded: boolean
+          webhook_config_id: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event_type: string
+          id?: string
+          response_excerpt?: string | null
+          status_code?: number | null
+          succeeded?: boolean
+          webhook_config_id: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          response_excerpt?: string | null
+          status_code?: number | null
+          succeeded?: boolean
+          webhook_config_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_delivery_log_webhook_config_id_fkey"
+            columns: ["webhook_config_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2618,7 +2840,16 @@ export type Database = {
         Returns: Json
       }
       generate_document_token: { Args: { prefix: string }; Returns: string }
+      has_admin_capability: {
+        Args: { capability_key: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_owner_admin: { Args: never; Returns: boolean }
+      matches_grants: {
+        Args: { capability_key: string; grants: Json }
+        Returns: boolean
+      }
       owns_professional_profile: {
         Args: { profile_id: string }
         Returns: boolean
