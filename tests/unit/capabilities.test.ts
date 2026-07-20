@@ -45,7 +45,6 @@ import {
   OWNER_ONLY_CAPABILITIES,
   matchesGrants,
   requireAdminCapability,
-  type CapabilityKey,
 } from '@/lib/access/capabilities'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
