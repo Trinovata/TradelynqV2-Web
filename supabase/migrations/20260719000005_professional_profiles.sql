@@ -246,7 +246,76 @@ CREATE TRIGGER professional_profiles_search_vector
 ALTER TABLE public.professional_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.professional_profiles FORCE ROW LEVEL SECURITY;
 
-GRANT SELECT ON public.professional_profiles TO anon, authenticated;
+-- ── SECURITY: column-level grants (fixed 20 Jul 2026) ───────────────────────
+--
+-- The previous version granted table-wide SELECT to anon. **RLS filters ROWS,
+-- never COLUMNS**, so the `listing_status = 'active'` policy did nothing to
+-- protect the sensitive columns on those rows. An adversarial test confirmed
+-- that as `anon`, `national_id_url`, `selfie_url`, `date_of_birth`,
+-- `home_address`, and `insurance_policy_number` all returned in cleartext.
+--
+-- The `kyc-documents` bucket was locked private while the URLs pointing into it
+-- were world-readable — the lock and the key stored in different places.
+--
+-- anon now receives an explicit column allow-list: exactly the fields a public
+-- storefront renders. A new column is NOT public by default; someone must add
+-- it here deliberately, which is the correct direction for that decision to
+-- fail in.
+GRANT SELECT (
+  id,
+  user_id,
+  slug,
+  business_name,
+  owner_name,
+  tagline,
+  bio,
+  category_id,
+  secondary_category_ids,
+  availability,
+  business_type,
+  employee_range,
+  profile_photo_url,
+  cover_photo_url,
+  portfolio_urls,
+  website_url,
+  instagram_handle,
+  services,
+  business_hours,
+  certifications,
+  service_areas,
+  business_address,
+  latitude,
+  longitude,
+  verification_status,
+  national_id_verified,
+  has_insurance,
+  insurance_type,
+  insurance_provider,
+  insurance_expires_at,
+  listing_status,
+  is_organisation,
+  tenure_started,
+  average_rating,
+  review_count,
+  created_at,
+  updated_at
+) ON public.professional_profiles TO anon;
+
+-- Deliberately NOT granted to anon:
+--   contact_phone, contact_whatsapp, home_address  — gated behind the connection
+--     gate; the API redacts them, and now the database does too
+--   national_id_url, national_id_back_url, selfie_url, date_of_birth  — identity
+--     documents and PII
+--   insurance_policy_number  — a policy number is not public trust signal;
+--     `has_insurance` and the expiry date are
+--   insurance_cert_url, google_place_id, search_vector, onboarding_step
+--   national_id_verified_at/_by, insurance_verified_at/_by  — moderation trail
+
+-- `authenticated` keeps table-wide SELECT: the owner must read their own row in
+-- full, and RLS confines them to it. Contact-field redaction for OTHER
+-- professionals' rows is the API's job (details/api-marketplace.md §2.1), which
+-- is verified separately at S080.
+GRANT SELECT ON public.professional_profiles TO authenticated;
 GRANT INSERT, UPDATE ON public.professional_profiles TO authenticated;
 
 -- Public reads active listings only. Note this exposes the gated contact

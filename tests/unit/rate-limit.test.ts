@@ -191,22 +191,74 @@ describe('identifier derivation', () => {
     expect(identifierFrom(request, 'user-123')).toBe('user:user-123')
   })
 
-  it('takes the FIRST x-forwarded-for entry — the client, not the proxy', () => {
+  it('prefers the platform-set header over anything the client can write', () => {
+    // SECURITY (fixed 20 Jul 2026). This previously took x-forwarded-for[0] — the
+    // end of the chain the CLIENT writes. Proxies append; they do not verify what
+    // is already there. On login there is no userId, so the fail-closed 5/min
+    // `auth` limiter keyed entirely on an attacker-controlled string: rotate it
+    // per request and credential stuffing is unbounded.
     const request = new Request('https://tradelynq.tech/api/x', {
-      headers: { 'x-forwarded-for': '203.0.113.9, 10.0.0.1, 10.0.0.2' },
+      headers: {
+        // Written by the caller…
+        'x-forwarded-for': '1.1.1.1, 203.0.113.9',
+        // …and this one is set by the platform on every request.
+        'x-vercel-forwarded-for': '203.0.113.9',
+      },
     })
-    // Taking the last entry would key every request to the same proxy address and
-    // rate-limit the entire platform as a single caller.
     expect(identifierFrom(request)).toBe('ip:203.0.113.9')
   })
 
-  it('falls back to x-real-ip, then to a stable unknown', () => {
-    const withReal = new Request('https://tradelynq.tech/api/x', {
-      headers: { 'x-real-ip': '198.51.100.7' },
+  it('cannot be evaded by rotating the client-written end of the chain', () => {
+    // Two requests from one real client, forging different leading entries. They
+    // must land in the SAME bucket, or the limiter counts to one forever.
+    const first = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-forwarded-for': '9.9.9.9, 203.0.113.9' },
     })
-    expect(identifierFrom(withReal)).toBe('ip:198.51.100.7')
+    const second = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-forwarded-for': '8.8.8.8, 203.0.113.9' },
+    })
 
+    expect(identifierFrom(first)).toBe(identifierFrom(second))
+    expect(identifierFrom(first)).toBe('ip:203.0.113.9')
+  })
+
+  it('rejects a header value that is not an address', () => {
+    // The value becomes a Redis key, so an unvalidated header is both a spoofing
+    // vector and an unbounded key.
+    const junk = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-real-ip': 'not-an-ip-at-all' },
+    })
+    expect(identifierFrom(junk)).toBe('ip:unidentified')
+
+    const huge = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-real-ip': 'a'.repeat(500) },
+    })
+    expect(identifierFrom(huge)).toBe('ip:unidentified')
+  })
+
+  it('accepts IPv6 and addresses carrying a port', () => {
+    const v6 = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-real-ip': '2001:db8::1' },
+    })
+    expect(identifierFrom(v6)).toBe('ip:2001:db8::1')
+
+    const withPort = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-real-ip': '203.0.113.9:44321' },
+    })
+    expect(identifierFrom(withPort)).toBe('ip:203.0.113.9:44321')
+  })
+
+  it('still prefers a proven user id over any header', () => {
+    const request = new Request('https://tradelynq.tech/api/x', {
+      headers: { 'x-vercel-forwarded-for': '203.0.113.9' },
+    })
+    expect(identifierFrom(request, 'user-123')).toBe('user:user-123')
+  })
+
+  it('falls back to one shared bucket when nothing identifies the caller', () => {
+    // Deliberately shared: on a fail-closed limiter an anonymous flood should be
+    // throttled together, not let each request mint itself a fresh key.
     const bare = new Request('https://tradelynq.tech/api/x')
-    expect(identifierFrom(bare)).toBe('ip:unknown')
+    expect(identifierFrom(bare)).toBe('ip:unidentified')
   })
 })

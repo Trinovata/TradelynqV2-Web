@@ -412,9 +412,27 @@ BEGIN
     RETURN jsonb_build_object('ok', false, 'error', 'invalid_amount');
   END IF;
 
-  -- Ownership. A NULL caller is the service role (cron, server route); an admin
-  -- may spend on someone's behalf when supporting them. Everyone else may spend
-  -- only their own credits.
+  -- ── Ownership ─────────────────────────────────────────────────────────────
+  --
+  -- SECURITY FIX (20 Jul 2026). The previous version skipped this check when
+  -- `auth.uid()` was NULL, on the assumption that NULL means "service role".
+  -- **It does not.** A PostgREST request made with the public ANON key also has
+  -- a NULL `auth.uid()`. Combined with PUBLIC holding EXECUTE by default, that
+  -- made this an unauthenticated API for draining any professional's credits:
+  -- an adversarial test confirmed `deduct_tool_credits('<victim>', 400, …)` as
+  -- `anon` returned ok with balance_after 100 against a victim seeded with 500.
+  --
+  -- Now: a NULL caller is REFUSED outright. The service role is identified
+  -- explicitly by its database role, never by the absence of a JWT subject.
+  -- EXECUTE is revoked from PUBLIC at the bottom of this file.
+  -- `postgres` is included alongside `service_role` because migrations, seeds,
+  -- and the policy suites run as it. `anon` and `authenticated` are the roles a
+  -- request can actually arrive as, and neither is listed — which is the point.
+  IF v_caller IS NULL AND current_user NOT IN ('service_role', 'postgres') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'forbidden');
+  END IF;
+
+  -- An identified caller must own the account, or be an admin supporting them.
   IF v_caller IS NOT NULL
      AND NOT public.is_admin()
      AND NOT public.owns_professional_profile(p_professional_id) THEN
@@ -471,10 +489,16 @@ $$;
 COMMENT ON FUNCTION public.deduct_tool_credits(UUID, INTEGER, TEXT, UUID) IS
   'Atomic credit spend. SELECT … FOR UPDATE serialises the sufficiency CHECK, not just the arithmetic — that is what stops two concurrent calls double-spending. Ownership-checked: V1''s version let anyone drain any account.';
 
--- Callable as an RPC by the app; the ownership check inside is what makes that
--- safe. anon is not granted: spending credits requires knowing whose they are.
+-- SECURITY: Postgres grants EXECUTE on new functions to PUBLIC by default, so a
+-- bare `GRANT … TO authenticated` is documentation rather than a boundary — anon
+-- inherits EXECUTE through PUBLIC regardless. Revoking PUBLIC first is what
+-- makes the subsequent grant the actual limit.
+--
+-- This is why the drain was reachable at all: the grant below looked like the
+-- allow-list and was not one.
+REVOKE ALL ON FUNCTION public.deduct_tool_credits(UUID, INTEGER, TEXT, UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.deduct_tool_credits(UUID, INTEGER, TEXT, UUID)
-  TO authenticated;
+  TO authenticated, service_role;
 
 -- ============================================================================
 -- RLS — accounts and ledger

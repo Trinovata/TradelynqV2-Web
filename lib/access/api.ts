@@ -3,6 +3,7 @@ import type { NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createBearerClient } from '@/lib/supabase/bearer'
 import { err } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import {
@@ -86,14 +87,27 @@ async function resolveUser(
     if (!token) return null
 
     // The admin client is used ONLY to validate the token. The client returned
-    // to the caller is the RLS-scoped one below — a route must never receive a
-    // service-role client just because it authenticated by bearer.
+    // to the caller is RLS-scoped — a route must never receive a service-role
+    // client just because it authenticated by bearer.
     const validator = createAdminClient()
     const { data, error } = await validator.auth.getUser(token)
 
     if (error || !data.user) return null
 
-    const supabase = await createClient()
+    // SECURITY FIX (20 Jul 2026). This previously returned `await createClient()`
+    // — the COOKIE-bound client — after validating the bearer token. A mobile
+    // request carries no cookies, so the returned client was anonymous:
+    // `auth.uid()` was NULL inside every RLS policy the route then relied on,
+    // while the route believed it knew who the caller was.
+    //
+    // It failed closed by accident rather than by design (profiles has no anon
+    // SELECT policy, so requireRole errored to INTERNAL), which meant D21's
+    // "one rules layer, two transports" did not actually work for mobile at all
+    // — and any route using requireAuth alone had no such protection.
+    //
+    // The client must carry the SAME token that was validated, so the database
+    // enforces the identity the route believes in.
+    const supabase = createBearerClient(token)
     return { userId: data.user.id, supabase }
   }
 
@@ -108,12 +122,41 @@ async function resolveUser(
 
 // ── Guards ───────────────────────────────────────────────────────────────────
 
-/** A valid session, of any role. */
+/**
+ * A valid session, of any role, on an ACTIVE account.
+ *
+ * The account-status check was previously only in `requireRole`, so any route
+ * guarded by `requireAuth` alone admitted suspended and pending accounts for the
+ * whole life of their token. Suspension has to bite on the next request, not
+ * whenever the JWT happens to expire.
+ */
 export async function requireAuth(request?: Request): Promise<AccessResult<AuthContext>> {
   const resolved = await resolveUser(request)
 
   if (!resolved) {
     return { ok: false, response: err('UNAUTHENTICATED') }
+  }
+
+  const { data, error } = await resolved.supabase
+    .from('profiles')
+    .select('account_status')
+    .eq('id', resolved.userId)
+    .single()
+
+  if (error || !data) {
+    logger.error('access:status_lookup_failed', { userId: resolved.userId, code: error?.code })
+    return { ok: false, response: err('INTERNAL') }
+  }
+
+  if (data.account_status !== 'active') {
+    return {
+      ok: false,
+      response: err(
+        'FORBIDDEN_ROLE',
+        { requiredRoles: [], currentRole: null },
+        'This account is not active.'
+      ),
+    }
   }
 
   return { ok: true, userId: resolved.userId, supabase: resolved.supabase }
@@ -222,12 +265,30 @@ export async function requireProfessional(
   // 'trialling' counts as entitled: Pioneer members are on a real plan with real
   // access, and gating them out of the features they were given for free would
   // defeat the programme.
-  const { data: subscription } = await role.supabase
+  const { data: subscription, error: subscriptionError } = await role.supabase
     .from('subscriptions')
     .select('subscription_plans(tier)')
     .eq('professional_id', data.id)
     .in('status', ['active', 'trialling'])
     .maybeSingle()
+
+  // The error was previously discarded, which produced a silent, undiagnosable
+  // downgrade: `.maybeSingle()` raises PGRST116 when more than one row matches,
+  // and nothing in the schema prevents two rows in ('active','trialling'). The
+  // tier would fall to null and a fully-paid Enterprise customer would be told
+  // PAYMENT_REQUIRED on every gated route, with no log line to explain it.
+  //
+  // Failing loudly is right here: answering INTERNAL to a paying customer is
+  // bad, but silently telling them their subscription does not exist is worse,
+  // and leaves nothing to debug from.
+  if (subscriptionError) {
+    logger.error('access:subscription_lookup_failed', {
+      userId: role.userId,
+      professionalId: data.id,
+      code: subscriptionError.code,
+    })
+    return { ok: false, response: err('INTERNAL') }
+  }
 
   const plan = subscription?.subscription_plans as { tier: TierId } | null | undefined
 

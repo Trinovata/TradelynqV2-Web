@@ -133,7 +133,19 @@ BEGIN
 
     IF grant_key LIKE '%.*' THEN
       prefix := left(grant_key, length(grant_key) - 1);  -- 'queue.*' -> 'queue.'
-      IF capability_key LIKE prefix || '%' THEN
+
+      -- SECURITY FIX (20 Jul 2026): compare by prefix, not by LIKE.
+      --
+      -- The previous version interpolated the grant into a LIKE pattern
+      -- unescaped, so `%` and `_` inside a grant behaved as wildcards. A grant
+      -- of `["%.*"]` matched EVERY capability, including money surfaces —
+      -- confirmed: matches_grants('billing.refund', '["%.*"]') returned true.
+      --
+      -- Bounded in practice, since writing admin_roles needs owner or
+      -- service_role, so it was an escalation amplifier and a seed-data footgun
+      -- rather than a direct path. left()/= removes the pattern semantics
+      -- entirely rather than escaping them, which cannot be got subtly wrong.
+      IF left(capability_key, length(prefix)) = prefix THEN
         RETURN TRUE;
       END IF;
     END IF;

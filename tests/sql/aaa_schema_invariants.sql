@@ -88,6 +88,12 @@ END $$;
 -- does not grant the right to reach anything. A table with policies but no
 -- GRANT is completely unreachable and the application breaks at runtime.
 
+-- NOTE on column-level grants: `has_table_privilege(role, tbl, 'SELECT')` is
+-- FALSE when a role holds only column-level SELECT. `professional_profiles`
+-- grants anon an explicit column allow-list (so identity documents are not
+-- world-readable), so table-level checks report a live policy as dead.
+-- `has_any_column_privilege` covers both forms and is what these checks use.
+
 DO $$
 DECLARE
   offenders TEXT;
@@ -98,8 +104,8 @@ BEGIN
    WHERE n.nspname = 'public'
      AND c.relkind = 'r'
      AND EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid)
-     AND NOT has_table_privilege('authenticated', c.oid, 'SELECT')
-     AND NOT has_table_privilege('anon', c.oid, 'SELECT');
+     AND NOT has_any_column_privilege('authenticated', c.oid, 'SELECT')
+     AND NOT has_any_column_privilege('anon', c.oid, 'SELECT');
 
   ASSERT offenders IS NULL,
     'Tables with policies but NO GRANT to anon or authenticated: ' || offenders ||
@@ -108,8 +114,54 @@ BEGIN
   RAISE NOTICE 'PASS 4 — every policied table is reachable by at least one role';
 END $$;
 
--- ── 5. Policies must not grant a role no GRANT backs ────────────────────────
--- The mirror of 4: a policy naming `anon` on a table anon cannot SELECT is dead
+-- ── 4b. Per-COMMAND reachability ────────────────────────────────────────────
+-- Check 4 only proves a table is readable by someone. A table with an INSERT
+-- policy but no INSERT grant is just as unreachable, and check 4 passes it
+-- happily because SELECT is granted. This closes that gap per command.
+
+DO $$
+DECLARE
+  offenders TEXT;
+BEGIN
+  SELECT string_agg(DISTINCT c.relname || ': ' || cmd_name || ' policy without grant', ', ')
+    INTO offenders
+    FROM pg_policy p
+    JOIN pg_class c ON c.oid = p.polrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    CROSS JOIN LATERAL (
+      SELECT CASE p.polcmd
+               WHEN 'a' THEN 'INSERT'
+               WHEN 'w' THEN 'UPDATE'
+               WHEN 'd' THEN 'DELETE'
+             END AS cmd_name
+    ) AS cmd
+   WHERE n.nspname = 'public'
+     AND cmd.cmd_name IS NOT NULL
+     -- Only where the policy actually names a client role.
+     AND EXISTS (
+       SELECT 1 FROM unnest(p.polroles) AS r
+        WHERE pg_get_userbyid(r) IN ('anon', 'authenticated')
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM unnest(p.polroles) AS r
+        WHERE pg_get_userbyid(r) IN ('anon', 'authenticated')
+          -- DELETE has no column-level form, so it must be tested at table
+          -- level; INSERT and UPDATE can be granted per column.
+          AND CASE
+                WHEN cmd.cmd_name = 'DELETE'
+                  THEN has_table_privilege(pg_get_userbyid(r), c.oid, 'DELETE')
+                ELSE has_any_column_privilege(pg_get_userbyid(r), c.oid, cmd.cmd_name)
+              END
+     );
+
+  ASSERT offenders IS NULL,
+    'Policies whose command has no matching GRANT (unreachable): ' || offenders;
+
+  RAISE NOTICE 'PASS 4b — every INSERT/UPDATE/DELETE policy has a matching grant';
+END $$;
+
+-- ── 5. Policies must not name a role no GRANT backs ─────────────────────────
+-- The mirror of 4: a policy naming `anon` on a table anon cannot read is dead
 -- code that reads as a public path in review.
 
 DO $$
@@ -122,12 +174,43 @@ BEGIN
     JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public'
      AND 'anon' = ANY (SELECT pg_get_userbyid(unnest(p.polroles)))
-     AND NOT has_table_privilege('anon', c.oid, 'SELECT');
+     AND NOT has_any_column_privilege('anon', c.oid, 'SELECT');
 
   ASSERT offenders IS NULL,
     'Policies granting anon on tables anon cannot SELECT (dead policy): ' || offenders;
 
   RAISE NOTICE 'PASS 5 — no dead anon policies';
+END $$;
+
+-- ── 5b. No client role may hold EXECUTE via PUBLIC on a SECURITY DEFINER fn ──
+-- Postgres grants EXECUTE on new functions to PUBLIC by default, so a
+-- `GRANT … TO authenticated` reads like an allow-list while anon inherits
+-- EXECUTE anyway. That is precisely how deduct_tool_credits became callable by
+-- anon, which made it an unauthenticated API for draining a competitor's
+-- credits. Every SECURITY DEFINER function must revoke PUBLIC explicitly.
+
+DO $$
+DECLARE
+  offenders TEXT;
+BEGIN
+  SELECT string_agg(p.proname, ', ' ORDER BY p.proname) INTO offenders
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public'
+     AND p.prosecdef
+     -- A NULL proacl means default privileges, i.e. PUBLIC holds EXECUTE.
+     AND (p.proacl IS NULL OR EXISTS (
+       SELECT 1 FROM unnest(p.proacl) AS acl
+        WHERE acl::text LIKE '=X/%'   -- '=X/owner' is the PUBLIC grant
+     ))
+     -- Trigger functions cannot be invoked directly by a client.
+     AND p.prorettype <> 'trigger'::regtype;
+
+  ASSERT offenders IS NULL,
+    'SECURITY DEFINER functions callable by PUBLIC (so by anon): ' || offenders ||
+    E'\n  Add: REVOKE ALL ON FUNCTION public.<fn>(<args>) FROM PUBLIC;';
+
+  RAISE NOTICE 'PASS 5c — no SECURITY DEFINER function is PUBLIC-executable';
 END $$;
 
 -- ── 6. Every foreign key is indexed ─────────────────────────────────────────

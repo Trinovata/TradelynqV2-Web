@@ -198,7 +198,14 @@ ALTER TABLE public.connections FORCE ROW LEVEL SECURITY;
 -- No anon: who contacted whom is private to the two parties.
 -- No UPDATE, no DELETE for authenticated: immutable, and removal is an admin or
 -- cascade action only.
-GRANT SELECT, INSERT ON public.connections TO authenticated;
+-- DELETE is granted because `connections_delete_admin` exists below and is
+-- otherwise dead code: RLS narrows a grant, it cannot create one, so a DELETE
+-- policy without a DELETE grant means admins silently cannot delete. Found by
+-- the per-command reachability check in aaa_schema_invariants.sql.
+--
+-- The grant is broad and the policy is the limit: only `is_admin()` matches, so
+-- a customer's DELETE matches no policy and affects zero rows.
+GRANT SELECT, INSERT, DELETE ON public.connections TO authenticated;
 
 CREATE POLICY connections_select_own_customer ON public.connections
   FOR SELECT TO authenticated
@@ -223,6 +230,96 @@ CREATE POLICY connections_insert_own_customer ON public.connections
 CREATE POLICY connections_delete_admin ON public.connections
   FOR DELETE TO authenticated
   USING (public.is_admin());
+
+-- ── THE CONNECTION GATE, ENFORCED IN THE DATABASE ───────────────────────────
+--
+-- SECURITY FIX (20 Jul 2026). The gate — two free contacts, then identity
+-- verification — existed ONLY in `requireCustomerConnectionGate` in TypeScript.
+-- The RLS policy above checks that you are inserting your own connection and
+-- nothing else, so any holder of the anon key could insert connections directly
+-- and walk straight past it. An adversarial test confirmed this: a customer at
+-- `connection_count = 2` with `kyc_status = 'not_required'` inserted ten further
+-- connections through PostgREST; the count went 2 → 10 and KYC was never
+-- triggered.
+--
+-- That key ships in the web bundle and in both mobile apps.
+--
+-- This is precisely the V1 failure the access layer's own documentation claims
+-- V2 fixed ("V1's apps talked to Supabase directly and therefore bypassed the
+-- connection gate"). Writing the guard in the API and granting direct INSERT
+-- reproduced it exactly.
+--
+-- The rule now lives where the data does. The TypeScript check stays, because it
+-- produces a good error with an actionable payload; this makes it an
+-- optimisation rather than the boundary.
+
+CREATE OR REPLACE FUNCTION public.enforce_connection_gate()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller UUID := (SELECT auth.uid());
+  v_profile public.customer_profiles%ROWTYPE;
+  v_existing INTEGER;
+  free_allowance CONSTANT INTEGER := 2;
+BEGIN
+  -- Service role and admins bypass: seeding, support, and migrations all create
+  -- connections legitimately. Identified by role, never by a NULL subject —
+  -- a NULL auth.uid() is also what the anon key presents.
+  IF (v_caller IS NULL AND current_user IN ('service_role', 'postgres'))
+     OR public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'Sign in to contact a professional.'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  SELECT * INTO v_profile
+    FROM public.customer_profiles
+   WHERE user_id = NEW.customer_id
+     FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No customer profile for this account.'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  -- Reconnecting to someone you already know is always free — otherwise the
+  -- gate charges a customer twice for one relationship.
+  SELECT COUNT(*) INTO v_existing
+    FROM public.connections
+   WHERE customer_id = NEW.customer_id
+     AND professional_id = NEW.professional_id;
+
+  IF v_existing > 0 THEN
+    RETURN NEW;
+  END IF;
+
+  -- Counted from the table rather than trusting the denormalised counter, so a
+  -- drifted counter cannot open the gate.
+  SELECT COUNT(*) INTO v_existing
+    FROM public.connections
+   WHERE customer_id = NEW.customer_id;
+
+  IF v_existing >= free_allowance AND v_profile.kyc_status <> 'verified' THEN
+    RAISE EXCEPTION 'Identity verification is required after % free contacts.', free_allowance
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.enforce_connection_gate() IS
+  'The connection gate, in the database. The API check is an optimisation; this is the boundary. Counts from the table, not the denormalised counter.';
+
+CREATE TRIGGER connections_enforce_gate
+  BEFORE INSERT ON public.connections
+  FOR EACH ROW EXECUTE FUNCTION public.enforce_connection_gate();
 
 -- ============================================================================
 -- job_enquiries

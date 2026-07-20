@@ -326,19 +326,86 @@ export async function checkRateLimit(
 }
 
 /**
+ * Shape check for an identifier derived from a header.
+ *
+ * A rate-limit key goes straight into Redis, so an unvalidated header value is
+ * both a spoofing vector and an unbounded key. Accepts IPv4 and IPv6 and nothing
+ * else — a value that is not an address is not an address, whatever it claims.
+ */
+function isPlausibleIp(value: string): boolean {
+  if (value.length === 0 || value.length > 45) return false
+  // IPv4, optionally with a port (some proxies append one).
+  if (/^\d{1,3}(\.\d{1,3}){3}(:\d{1,5})?$/.test(value)) return true
+  // IPv6, including the bracketed-with-port form.
+  if (value.includes(':') && /^\[?[0-9a-fA-F:.]{2,45}\]?(:\d{1,5})?$/.test(value)) return true
+  return false
+}
+
+/**
  * Derives the rate-limit identifier from a request.
  *
- * Prefers the authenticated user id; falls back to the client IP. Vercel sets
- * `x-forwarded-for` as a comma-separated chain where the FIRST entry is the client —
- * taking the last would key every request to the same proxy address and effectively
- * rate-limit the whole platform as one caller.
+ * ## Why this is not simply `x-forwarded-for[0]`
+ *
+ * SECURITY FIX (20 Jul 2026). The previous version took the FIRST entry of
+ * `x-forwarded-for`, reasoning that the first entry is the client. That is true
+ * of a well-behaved chain — and the first entry is also the part the CLIENT
+ * writes. Proxies append to that header; they do not verify what was already in
+ * it.
+ *
+ * On the login path there is no `userId`, so the fail-closed 5/min `auth`
+ * limiter keyed entirely on an attacker-controlled string: rotate the first
+ * entry per request and credential stuffing is unbounded. The converse is
+ * arguably worse — forge a victim's address to exhaust their auth budget and
+ * lock them out of their own account.
+ *
+ * The order below prefers values a client cannot forge:
+ *
+ *   1. `userId` — proven by a validated session.
+ *   2. `x-vercel-forwarded-for` — platform-set and overwritten every request, so
+ *      a client-supplied copy cannot survive.
+ *   3. `x-real-ip` — also platform-set.
+ *   4. The LAST `x-forwarded-for` entry — the hop nearest us, i.e. the one our
+ *      own infrastructure appended, rather than the furthest one the caller
+ *      wrote.
+ *
+ * Note this is the opposite end of the chain from the usual "find the real
+ * client IP" advice. That advice optimises for accurate attribution; this
+ * optimises for non-forgeability, which is the right trade for a security
+ * control. Behind a single trusted proxy the two coincide.
+ *
+ * @param trustedProxyCount How many proxies sit in front of the app. Used only
+ *   for the `x-forwarded-for` fallback; the platform headers are preferred.
  */
-export function identifierFrom(request: Request, userId?: string | null): string {
+export function identifierFrom(
+  request: Request,
+  userId?: string | null,
+  trustedProxyCount = 1
+): string {
   if (userId) return `user:${userId}`
 
-  const forwarded = request.headers.get('x-forwarded-for')
-  const first = forwarded?.split(',')[0]?.trim()
-  if (first) return `ip:${first}`
+  // Platform-set, not client-forgeable.
+  const vercelForwarded = request.headers.get('x-vercel-forwarded-for')?.trim()
+  if (vercelForwarded && isPlausibleIp(vercelForwarded)) return `ip:${vercelForwarded}`
 
-  return `ip:${request.headers.get('x-real-ip')?.trim() ?? 'unknown'}`
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp && isPlausibleIp(realIp)) return `ip:${realIp}`
+
+  // Fall back to the chain, counted from OUR end.
+  const chain = request.headers
+    .get('x-forwarded-for')
+    ?.split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+
+  if (chain && chain.length > 0) {
+    const index = Math.max(0, chain.length - trustedProxyCount)
+    const candidate = chain[index] ?? chain[chain.length - 1]
+    if (candidate && isPlausibleIp(candidate)) return `ip:${candidate}`
+  }
+
+  // Deliberately one shared bucket. Every unidentifiable caller competes for a
+  // single allowance, which is restrictive by design: on a fail-closed limiter
+  // an anonymous flood should be throttled together, not let each request mint
+  // itself a fresh key.
+  return 'ip:unidentified'
 }
