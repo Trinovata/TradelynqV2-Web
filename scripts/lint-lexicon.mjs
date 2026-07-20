@@ -144,6 +144,13 @@ const RULES = [
         return false
       if (/colorScheme|prefers-color-scheme|color-mix|colorMode|transition-colors/.test(line))
         return false
+      // Tailwind arbitrary-value brackets name CSS properties directly:
+      // `transition-[color]`, `transition-[color,box-shadow]`. The hyphen
+      // lookbehind above does not catch these because the character before the
+      // property name is `[`. Exempting them is consistent with this rule's own
+      // message — and the motion catalogue REQUIRES naming properties explicitly
+      // rather than using `transition-all`, so this syntax is not avoidable.
+      if (/-\[[^\]]*colou?r/.test(line)) return false
       // Only flag the American spelling; "colour" is what we want and must not warn.
       return /(?<![-\w])colors?(?![-\w])/.test(line)
     },

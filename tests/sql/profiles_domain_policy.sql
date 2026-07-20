@@ -121,8 +121,15 @@ BEGIN
    WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
   ASSERT vec IS NOT NULL, 'search_vector was not populated';
 
+  -- Scoped to the fixture row. A bare `COUNT(*) … = 1` asserted that exactly one
+  -- professional in the entire database serves Arima, which is a fact about the
+  -- data rather than about the search vector — and it broke as soon as
+  -- `npm run db:seed` (S046) added development supply that also serves Arima.
+  -- The property under test is "this row's service_areas reached its
+  -- search_vector", so the query now names the row.
   SELECT COUNT(*) INTO hits FROM public.professional_profiles
-   WHERE search_vector @@ to_tsquery('english', 'arima');
+   WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+     AND search_vector @@ to_tsquery('english', 'arima');
   ASSERT hits = 1, 'service area not searchable via search_vector';
 
   SELECT COUNT(*) INTO hits FROM public.professional_profiles
@@ -241,11 +248,27 @@ BEGIN
   GET DIAGNOSTICS affected = ROW_COUNT;
   ASSERT affected = 0, 'RLS leak: one professional edited another''s listing';
 
-  -- Neither listing is active, so nothing is publicly visible; Ravi sees only
-  -- his own row via the select_own policy.
-  SELECT COUNT(*) INTO visible FROM public.professional_profiles;
+  -- Stated as two properties rather than one count.
+  --
+  -- This read `COUNT(*) = 1`, resting on the assumption that no listing anywhere
+  -- was active, so Ravi's own row was the only thing visible. Development supply
+  -- from `npm run db:seed` (S046) includes active listings — which Ravi is
+  -- *supposed* to see, since they are public — so the count became 11 and the
+  -- suite reported an RLS leak that did not exist.
+  --
+  -- What actually must hold is: Ravi sees his own row, and Ravi sees no other
+  -- professional's unpublished row. Active listings being visible is the
+  -- marketplace working, not a leak.
+  SELECT COUNT(*) INTO visible FROM public.professional_profiles
+   WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
   ASSERT visible = 1,
-    format('RLS leak: expected 1 visible profile, saw %s', visible);
+    format('RLS leak: a professional cannot see their own listing, saw %s', visible);
+
+  SELECT COUNT(*) INTO visible FROM public.professional_profiles
+   WHERE listing_status <> 'active'
+     AND user_id <> 'aaaaaaaa-0000-0000-0000-000000000001';
+  ASSERT visible = 0,
+    format('RLS leak: professional can see %s other unpublished listing(s)', visible);
 
   RAISE NOTICE 'PASS 9 — professionals are isolated from each other';
 END $$;
@@ -356,9 +379,16 @@ DO $$
 DECLARE
   visible INT;
 BEGIN
-  SELECT COUNT(*) INTO visible FROM public.professional_profiles;
-  -- Neither fixture listing is active, so anon correctly sees none of them —
-  -- but the read itself must succeed, proving the public path exists.
+  -- The read itself must succeed, proving the public path exists at all — an
+  -- exception here would mean the marketplace is unbrowsable signed-out.
+  --
+  -- The assertion is scoped to non-active rows. It previously read `visible = 0`
+  -- across the whole table, which was only true because neither fixture was
+  -- active; once `npm run db:seed` (S046) added published supply, anon correctly
+  -- saw 10 active listings and the suite called it a leak. Active listings being
+  -- publicly readable is the entire point of the table.
+  SELECT COUNT(*) INTO visible FROM public.professional_profiles
+   WHERE listing_status <> 'active';
   ASSERT visible = 0,
     format('anon saw %s non-active listings; only active ones may be public', visible);
 

@@ -1347,7 +1347,20 @@ DO $$
 DECLARE
   notes_left INT;
   reviews_left INT;
+  fixture_profile UUID;
 BEGIN
+  -- Scoped to this suite's own fixture rather than counting the whole table.
+  --
+  -- These assertions previously read `COUNT(*) FROM public.reviews = 0`, which
+  -- silently assumed the database contained nothing but this suite's data. That
+  -- held until `npm run db:seed` (S046) added development supply, at which point
+  -- the suite reported a cascade failure that had not happened. Counting global
+  -- rows to prove a local deletion is the bug; the property is "THIS
+  -- professional's children are gone", so that is what is now asserted.
+  SELECT id INTO fixture_profile
+    FROM public.professional_profiles
+   WHERE user_id = 'aaaaaaaa-0000-0000-0000-00000000000a';
+
   -- The admin: SET NULL on reviews.moderated_by, disputes.resolved_by, and
   -- case_notes.author_id — the last of which passes through the append-only
   -- trigger as an UPDATE.
@@ -1360,8 +1373,14 @@ BEGIN
   -- enquiries, bookings, availability, reviews, disputes, and case notes.
   DELETE FROM auth.users WHERE id = 'aaaaaaaa-0000-0000-0000-00000000000a';
 
-  SELECT COUNT(*) INTO notes_left FROM public.case_notes;
-  SELECT COUNT(*) INTO reviews_left FROM public.reviews;
+  SELECT COUNT(*) INTO reviews_left
+    FROM public.reviews WHERE professional_id = fixture_profile;
+
+  -- case_notes hang off disputes, which hang off the professional. Any note
+  -- whose dispute no longer exists is a true orphan, whoever created it.
+  SELECT COUNT(*) INTO notes_left
+    FROM public.case_notes n
+   WHERE NOT EXISTS (SELECT 1 FROM public.disputes d WHERE d.id = n.dispute_id);
 
   ASSERT notes_left = 0,
     format('cascade left %s orphaned case notes behind', notes_left);

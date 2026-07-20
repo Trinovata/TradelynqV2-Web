@@ -104,7 +104,12 @@ function makeSupabase(
   const client = {
     from: (table: string) => makeQuery(table, tables[table] ?? { data: null }, log),
     auth: {
-      getUser: vi.fn(async (_token?: string) => ({
+      // The parameter is declared, though unused, so the double's signature
+      // matches the real `getUser(token?)`. A zero-arg stub would still satisfy
+      // every call site here but would stop type-checking the bearer path, which
+      // is the one path that passes a token.
+      getUser: vi.fn(async (token?: string) => ({
+        _receivedToken: token,
         data: { user: user ?? null },
         error: user ? null : { message: 'no session' },
       })),

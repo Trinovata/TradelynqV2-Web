@@ -7,9 +7,112 @@ import { Badge, STATUS_VARIANT, type StatusKey } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Skeleton, ProfessionalCardSkeleton, EmptyState, ErrorState } from '@/components/ui/States'
+import { Select } from '@/components/ui/Select'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { RadioGroup, Radio } from '@/components/ui/Radio'
+import { Switch } from '@/components/ui/Switch'
+import { Modal } from '@/components/ui/Modal'
+import { Sheet } from '@/components/ui/Sheet'
+import { Toaster, toast } from '@/components/ui/Toast'
+import { Tooltip } from '@/components/ui/Tooltip'
+import { Tabs } from '@/components/ui/Tabs'
+import { Avatar, type AvatarSize } from '@/components/ui/Avatar'
+import { StarRating } from '@/components/ui/StarRating'
+import { ProgressBar, StepIndicator } from '@/components/ui/Progress'
+import { Table, type TableColumn } from '@/components/ui/Table'
+import { Pagination } from '@/components/ui/Pagination'
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
+import { Banner } from '@/components/ui/Banner'
 import { useTheme, type ThemePreference } from '@/components/layout/ThemeProvider'
 import { formatTTD, formatRating, formatReviewCount, formatDate } from '@/lib/utils/format'
 import { TIERS, TIER_ORDER, monthlyTotal } from '@/lib/constants/pricing'
+
+// ── Gallery fixtures ─────────────────────────────────────────────────────────
+// Deliberately the same shape of data the real surfaces carry — Trinidad areas,
+// TTD amounts, real category names. A gallery filled with "Option 1 / Option 2"
+// makes every layout look fine, because nothing in it is ever an awkward length.
+
+const SHORT_OPTIONS = [
+  { value: 'electrician', label: 'Electrician' },
+  { value: 'plumber', label: 'Plumber' },
+  { value: 'hairstylist', label: 'Hairstylist' },
+  { value: 'photographer', label: 'Photographer' },
+] satisfies { value: string; label: string }[]
+
+// Over the eight-option threshold, so Select turns itself searchable. Grouped by
+// region, and deliberately NOT alphabetised — the regional order carries meaning
+// that sorting would destroy.
+const AREA_OPTIONS = [
+  { value: 'port-of-spain', label: 'Port of Spain', group: 'North' },
+  { value: 'diego-martin', label: 'Diego Martin', group: 'North' },
+  { value: 'maraval', label: 'Maraval', group: 'North' },
+  { value: 'arima', label: 'Arima', group: 'East' },
+  { value: 'tunapuna', label: 'Tunapuna', group: 'East' },
+  { value: 'sangre-grande', label: 'Sangre Grande', group: 'East' },
+  { value: 'chaguanas', label: 'Chaguanas', group: 'Central' },
+  { value: 'couva', label: 'Couva', group: 'Central' },
+  { value: 'san-fernando', label: 'San Fernando', group: 'South' },
+  { value: 'point-fortin', label: 'Point Fortin', group: 'South' },
+  { value: 'scarborough', label: 'Scarborough', group: 'Tobago' },
+] satisfies { value: string; label: string; group: string }[]
+
+const KIT_TABS = [
+  { value: 'all', label: 'All', count: 12 },
+  { value: 'pending', label: 'Pending', count: 3 },
+  { value: 'accepted', label: 'Accepted', count: 8 },
+  { value: 'declined', label: 'Declined', count: 1 },
+] satisfies { value: string; label: string; count: number }[]
+
+const AVATAR_SIZES: AvatarSize[] = [24, 32, 40, 64, 96]
+
+type InvoiceRow = {
+  reference: string
+  client: string
+  amount: number
+  status: StatusKey
+  statusLabel: string
+}
+
+const INVOICE_ROWS: InvoiceRow[] = [
+  {
+    reference: 'INV-0041',
+    client: 'Simone Job',
+    amount: 1800,
+    status: 'completed',
+    statusLabel: 'Paid',
+  },
+  {
+    reference: 'INV-0042',
+    client: 'Andre Williams',
+    amount: 450,
+    status: 'pending',
+    statusLabel: 'Sent',
+  },
+  {
+    reference: 'INV-0043',
+    client: 'Lisa Rampersad',
+    amount: 12500,
+    status: 'draft',
+    statusLabel: 'Draft',
+  },
+]
+
+const INVOICE_COLUMNS: TableColumn<InvoiceRow>[] = [
+  { key: 'reference', header: 'Reference' },
+  { key: 'client', header: 'Client', sortable: true },
+  {
+    key: 'amount',
+    header: 'Amount',
+    numeric: true,
+    sortable: true,
+    render: (row) => formatTTD(row.amount),
+  },
+  {
+    key: 'status',
+    header: 'Status',
+    render: (row) => <Badge status={row.status}>{row.statusLabel}</Badge>,
+  },
+]
 
 /**
  * /dev/kit — the component gallery (playbook S073).
@@ -79,6 +182,20 @@ function ThemeSwitch() {
 
 export default function DevKitPage() {
   const [loading, setLoading] = React.useState(false)
+
+  // Gallery state. Each control is genuinely interactive rather than a static
+  // screenshot: a primitive that only ever renders its default state hides
+  // exactly the bugs a gallery exists to catch.
+  const [category, setCategory] = React.useState<string | null>(null)
+  const [area, setArea] = React.useState<string | null>(null)
+  const [accepted, setAccepted] = React.useState(false)
+  const [contact, setContact] = React.useState('whatsapp')
+  const [listed, setListed] = React.useState(true)
+  const [modalOpen, setModalOpen] = React.useState(false)
+  const [sheetOpen, setSheetOpen] = React.useState(false)
+  const [tab, setTab] = React.useState<string>('all')
+  const [rating, setRating] = React.useState(4)
+  const [page, setPage] = React.useState(1)
 
   const statuses = Object.keys(STATUS_VARIANT) as StatusKey[]
 
@@ -304,6 +421,274 @@ export default function DevKitPage() {
           })}
         </div>
       </Section>
+
+      <Section
+        title="Form controls"
+        note="Select falls back to a searchable combobox at eight or more options. Every control's whole label row is clickable, and the 20px visuals sit inside 44px hit areas."
+      >
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <Select
+              label="Category"
+              options={SHORT_OPTIONS}
+              value={category}
+              onChange={setCategory}
+              placeholder="Choose a category"
+              clearable
+              onClear={() => setCategory(null)}
+            />
+            <Select
+              label="Service area"
+              hint="Auto-searchable — this list is over the eight-option threshold."
+              options={AREA_OPTIONS}
+              value={area}
+              onChange={setArea}
+              placeholder="Choose an area"
+            />
+            <Select
+              label="Category"
+              options={SHORT_OPTIONS}
+              value={null}
+              onChange={() => undefined}
+              placeholder="Choose a category"
+              error="Choose a category so customers can find you."
+            />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Checkbox
+              label="I accept the Terms of Service"
+              description="Required before your listing can go live."
+              checked={accepted}
+              onCheckedChange={(next) => setAccepted(next === true)}
+            />
+            <Checkbox label="Disabled, unchecked" disabled />
+            <Checkbox
+              label="With an error"
+              error="You must accept the Terms of Service to continue."
+            />
+
+            <RadioGroup
+              label="Contact preference"
+              value={contact}
+              onValueChange={setContact}
+              hint="How customers reach you first."
+            >
+              <Radio value="whatsapp" label="WhatsApp" />
+              <Radio value="call" label="Call" />
+              <Radio value="email" label="Email" />
+            </RadioGroup>
+
+            <Switch
+              label="Listing visible"
+              description="Turning this off hides you from search immediately."
+              checked={listed}
+              onCheckedChange={setListed}
+            />
+            <Switch label="Disabled switch" disabled />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Overlays"
+        note="Modal renders as a bottom Sheet below 768px automatically — narrow the window and reopen it. Toasts stack to three, oldest first."
+      >
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => setModalOpen(true)}>Open modal</Button>
+          <Button variant="secondary" onClick={() => setSheetOpen(true)}>
+            Open sheet
+          </Button>
+          <Button variant="secondary" onClick={() => toast('Storefront link copied.')}>
+            Toast — success
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast('That enquiry could not be sent.', {
+                kind: 'error',
+                action: { label: 'Retry', onClick: () => toast('Sent.') },
+              })
+            }
+          >
+            Toast — error with action
+          </Button>
+          <Tooltip content="Visible to customers on your storefront">
+            <Button variant="ghost">Hover for a tooltip</Button>
+          </Tooltip>
+        </div>
+
+        <Modal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          title="Send this quote?"
+          description="The customer receives a link they can accept or decline."
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setModalOpen(false)}>Send quote</Button>
+            </>
+          }
+        >
+          <p className="text-body text-sm">
+            Quote total {formatTTD(4500)} for Baptiste Electrical Services. Once sent, the quote
+            cannot be edited — you would issue a replacement instead.
+          </p>
+        </Modal>
+
+        <Sheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          title="Filter results"
+          description="Narrow the list by area and rating."
+        >
+          <div className="flex flex-col gap-4 pb-2">
+            <Select
+              label="Service area"
+              options={AREA_OPTIONS}
+              value={area}
+              onChange={setArea}
+              placeholder="Any area"
+            />
+            <StarRating value={rating} interactive onChange={setRating} label="Minimum rating" />
+          </div>
+        </Sheet>
+      </Section>
+
+      <Section
+        title="Navigation and progress"
+        note="Tab counts and every numeral render in mono with tabular figures, so a changing number never shifts its neighbours."
+      >
+        <div className="flex flex-col gap-8">
+          <Breadcrumbs
+            items={[
+              { label: 'Home', href: '/' },
+              { label: 'Electricians', href: '/categories/electrician' },
+              { label: 'Baptiste Electrical Services' },
+            ]}
+          />
+
+          <Tabs tabs={KIT_TABS} value={tab} onChange={setTab} label="Enquiries" />
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <ProgressBar value={3} max={5} label="Profile strength" showPercentage />
+            <ProgressBar value={27} max={30} label="Invoices this month" showPercentage />
+          </div>
+
+          <StepIndicator
+            steps={['Basics', 'Services', 'Areas', 'Verification', 'Plan']}
+            current={3}
+          />
+
+          <Pagination page={page} total={8} onChange={setPage} />
+        </div>
+      </Section>
+
+      <Section
+        title="Identity and rating"
+        note="Initials are derived from the name, never passed in — so the same person cannot render as two different avatars on two surfaces. The verified shield is suppressed below 40px, where it is only a coloured smudge."
+      >
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-end gap-4">
+            {AVATAR_SIZES.map((size) => (
+              <Avatar key={size} alt="Darren Baptiste" name="Darren Baptiste" size={size} />
+            ))}
+            <Avatar alt="Nicole Alleyne" name="Nicole Alleyne" size={64} verified />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <StarRating value={4.8} count={23} />
+            <StarRating value={4} count={2} size={20} />
+            <StarRating value={0} count={0} />
+            <StarRating value={rating} interactive onChange={setRating} label="Your rating" />
+          </div>
+        </div>
+      </Section>
+
+      <Section
+        title="Banners and tables"
+        note="One banner per surface — the page resolves which is most urgent, the component never stacks them. Numeric table columns are right-aligned and mono so amounts compare down the column."
+      >
+        <div className="flex flex-col gap-4">
+          <Banner
+            kind="info"
+            text="Your listing is under review. We aim to decide within 48 hours."
+          />
+          <Banner
+            kind="warning"
+            text="Your insurance certificate expires in 14 days."
+            action={{ label: 'Upload a new one' }}
+          />
+          <Banner kind="success" text="Payment received. Your subscription is active." />
+
+          <Table
+            caption="Recent invoices"
+            columns={INVOICE_COLUMNS}
+            rows={INVOICE_ROWS}
+            getRowKey={(row) => row.reference}
+            mobileCard={(row) => (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground font-medium">{row.client}</span>
+                  <Badge status={row.status}>{row.statusLabel}</Badge>
+                </div>
+                <span className="text-muted font-mono text-xs tabular-nums">{row.reference}</span>
+                <span className="text-foreground font-mono tabular-nums">
+                  {formatTTD(row.amount)}
+                </span>
+              </div>
+            )}
+          />
+        </div>
+      </Section>
+
+      <Section
+        title="Pricing"
+        note="Rendered from lib/constants/pricing.ts. Change a value there and this follows with no copy edits."
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {TIER_ORDER.map((id) => {
+            const tier = TIERS[id]
+            return (
+              <Card key={id} elevation={id === 'growth' ? 'raised' : 'flat'}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>{tier.name}</CardTitle>
+                    {id === 'growth' && <Badge variant="active">Most popular</Badge>}
+                  </div>
+                  <CardDescription>{tier.summary}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-display-md text-foreground font-mono tabular-nums">
+                    {formatTTD(tier.monthly)}
+                    <span className="text-muted text-sm">/mo</span>
+                  </p>
+                  <p className="text-muted mt-2 text-xs">
+                    Registered: {formatTTD(monthlyTotal(id, 'registered', 0))}/mo · Sole trader
+                    after 6 months: {formatTTD(monthlyTotal(id, 'sole_trader', 6))}/mo
+                  </p>
+                  <ul className="mt-3 flex flex-col gap-1">
+                    {tier.adds.map((item) => (
+                      <li key={item} className="text-body flex items-start gap-2 text-sm">
+                        <ShieldCheck
+                          className="text-success mt-0.5 size-3.5 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </Section>
+
+      {/* Mounted once for the whole gallery — the live region must not be duplicated. */}
+      <Toaster />
     </main>
   )
 }

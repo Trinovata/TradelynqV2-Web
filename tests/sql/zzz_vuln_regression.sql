@@ -147,9 +147,28 @@ DECLARE
   visible INT;
   name_read TEXT;
 BEGIN
+  -- Asserted as a property, not as a count.
+  --
+  -- This previously read `visible = 2`, matching the two fixtures above. That
+  -- passed, but it was testing "the database contains what I just inserted"
+  -- rather than "anon sees active listings and nothing else" — and it broke the
+  -- moment `npm run db:seed` (S046) put real development supply in the database,
+  -- reporting a security failure where none existed.
+  --
+  -- The two assertions below state the actual property directly and hold for any
+  -- amount of ambient data: anon can see at least the active fixtures, and anon
+  -- can see NO listing that is not active. The second is the one that matters —
+  -- a draft or suspended listing leaking to the public storefront is the bug.
+  SELECT COUNT(*) INTO visible
+    FROM public.professional_profiles
+   WHERE listing_status <> 'active';
+  ASSERT visible = 0,
+    format('CRITICAL: anon can see %s non-active listing(s) — drafts and suspended '
+           || 'profiles must never reach the public storefront', visible);
+
   SELECT COUNT(*) INTO visible FROM public.professional_profiles;
-  ASSERT visible = 2,
-    format('the public storefront should see 2 active listings, saw %s', visible);
+  ASSERT visible >= 2,
+    format('the public storefront went blind — anon sees %s listings', visible);
 
   SELECT business_name INTO name_read FROM public.professional_profiles
    WHERE slug LIKE 'victim-services%';
