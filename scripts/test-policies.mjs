@@ -54,7 +54,32 @@ function listSuites() {
   }
 }
 
+/**
+ * The database container's own subnet address.
+ *
+ * The concurrency suite opens a second session with dblink, which refuses a
+ * non-superuser connection whose password was not actually used to authenticate.
+ * Supabase's pg_hba grants `trust` on loopback, so 127.0.0.1 is rejected; the
+ * container's subnet address falls under a scram-sha-256 rule and works.
+ *
+ * `inet_server_addr()` cannot supply this — it returns NULL when psql connects
+ * over a socket, which is how this runner connects.
+ */
+function resolveDbHost(container) {
+  try {
+    const out = execFileSync(
+      'docker',
+      ['inspect', '-f', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', container],
+      { encoding: 'utf8' }
+    ).trim()
+    return out || '127.0.0.1'
+  } catch {
+    return '127.0.0.1'
+  }
+}
+
 const container = resolveDbContainer()
+const dbHost = resolveDbHost(container)
 const suites = listSuites()
 
 if (suites.length === 0) {
@@ -80,6 +105,9 @@ for (const suite of suites) {
       'postgres',
       '-v',
       'ON_ERROR_STOP=1',
+      // Consumed by the concurrency suite; harmless and unused elsewhere.
+      '-v',
+      `db_host=${dbHost}`,
       '-q',
     ],
     { input: readFileSync(join(SQL_DIR, suite), 'utf8'), encoding: 'utf8' }

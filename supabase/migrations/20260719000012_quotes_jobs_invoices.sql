@@ -47,7 +47,9 @@ LANGUAGE sql
 VOLATILE
 SET search_path = ''
 AS $$
-  SELECT prefix || encode(gen_random_bytes(32), 'hex');
+  -- Schema-qualified: gen_random_bytes is pgcrypto, which Supabase installs
+  -- into `extensions`, and the pinned empty search_path would not find it.
+  SELECT prefix || encode(extensions.gen_random_bytes(32), 'hex');
 $$;
 
 COMMENT ON FUNCTION public.generate_document_token(TEXT) IS
@@ -277,7 +279,7 @@ LANGUAGE plpgsql
 SET search_path = ''
 AS $$
 DECLARE
-  allowed job_status[];
+  allowed public.job_status[];
 BEGIN
   -- Foreign-key SET NULL (enquiry_id, quote_id, review_id, invoice_id) arrives
   -- as an UPDATE at depth > 1 and never changes status; let it through rather
@@ -291,11 +293,11 @@ BEGIN
   END IF;
 
   allowed := CASE OLD.status
-    WHEN 'enquiry'     THEN ARRAY['accepted']::job_status[]
-    WHEN 'accepted'    THEN ARRAY['in_progress', 'enquiry']::job_status[]
-    WHEN 'in_progress' THEN ARRAY['completed', 'accepted']::job_status[]
-    WHEN 'completed'   THEN ARRAY['invoiced', 'in_progress']::job_status[]
-    WHEN 'invoiced'    THEN ARRAY[]::job_status[]
+    WHEN 'enquiry'     THEN ARRAY['accepted']::public.job_status[]
+    WHEN 'accepted'    THEN ARRAY['in_progress', 'enquiry']::public.job_status[]
+    WHEN 'in_progress' THEN ARRAY['completed', 'accepted']::public.job_status[]
+    WHEN 'completed'   THEN ARRAY['invoiced', 'in_progress']::public.job_status[]
+    WHEN 'invoiced'    THEN ARRAY[]::public.job_status[]
   END;
 
   IF NOT (NEW.status = ANY (allowed)) THEN
