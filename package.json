@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:policies": "node scripts/test-policies.mjs",
     "lint:lexicon": "node scripts/lint-lexicon.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run lint:lexicon && npm run format:check && npm run test && npm run test:policies",
     "db:reset": "supabase db reset",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
