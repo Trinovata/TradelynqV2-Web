@@ -168,16 +168,38 @@ DO $$
 DECLARE
   offenders TEXT;
 BEGIN
+  -- Matched against the policy's OWN command, not against SELECT.
+  --
+  -- This previously required anon to hold SELECT on any table carrying an anon
+  -- policy. That is right for a readable table and wrong for a write-only one:
+  -- `insurance_referrals` accepts an anonymous click beacon and deliberately
+  -- grants anon INSERT with no SELECT, because a public read would expose which
+  -- professionals are shopping for insurance. The old rule called that correct
+  -- design a dead policy.
+  --
+  -- The invariant is unchanged in strength — a policy naming a role that cannot
+  -- perform the policy's command is still dead code that reads as a live path in
+  -- review — it is simply now checked against the right privilege.
   SELECT string_agg(DISTINCT c.relname || '.' || p.polname, ', ') INTO offenders
     FROM pg_policy p
     JOIN pg_class c ON c.oid = p.polrelid
     JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public'
      AND 'anon' = ANY (SELECT pg_get_userbyid(unnest(p.polroles)))
-     AND NOT has_any_column_privilege('anon', c.oid, 'SELECT');
+     AND NOT CASE p.polcmd
+               WHEN 'r' THEN has_any_column_privilege('anon', c.oid, 'SELECT')
+               WHEN 'a' THEN has_any_column_privilege('anon', c.oid, 'INSERT')
+               WHEN 'w' THEN has_any_column_privilege('anon', c.oid, 'UPDATE')
+               WHEN 'd' THEN has_table_privilege('anon', c.oid, 'DELETE')
+               -- FOR ALL: any one of the four makes the policy reachable.
+               ELSE has_any_column_privilege('anon', c.oid, 'SELECT')
+                 OR has_any_column_privilege('anon', c.oid, 'INSERT')
+                 OR has_any_column_privilege('anon', c.oid, 'UPDATE')
+                 OR has_table_privilege('anon', c.oid, 'DELETE')
+             END;
 
   ASSERT offenders IS NULL,
-    'Policies granting anon on tables anon cannot SELECT (dead policy): ' || offenders;
+    'Policies naming anon for a command anon cannot perform (dead policy): ' || offenders;
 
   RAISE NOTICE 'PASS 5 — no dead anon policies';
 END $$;

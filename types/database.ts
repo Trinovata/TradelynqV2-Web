@@ -34,6 +34,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_packages: {
+        Row: {
+          ad_type: Database["public"]["Enums"]["ad_type"]
+          created_at: string
+          duration_days: number
+          id: string
+          is_active: boolean
+          max_impressions: number | null
+          name: string
+          placement_zones: string[]
+          price_ttd: number
+        }
+        Insert: {
+          ad_type: Database["public"]["Enums"]["ad_type"]
+          created_at?: string
+          duration_days: number
+          id?: string
+          is_active?: boolean
+          max_impressions?: number | null
+          name: string
+          placement_zones?: string[]
+          price_ttd: number
+        }
+        Update: {
+          ad_type?: Database["public"]["Enums"]["ad_type"]
+          created_at?: string
+          duration_days?: number
+          id?: string
+          is_active?: boolean
+          max_impressions?: number | null
+          name?: string
+          placement_zones?: string[]
+          price_ttd?: number
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action_type: string
@@ -326,6 +362,47 @@ export type Database = {
           },
         ]
       }
+      business_knowledge: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json
+          professional_id: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          professional_id: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json
+          professional_id?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_knowledge_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_notes: {
         Row: {
           author_id: string | null
@@ -364,6 +441,114 @@ export type Database = {
             columns: ["dispute_id"]
             isOneToOne: false
             referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogue_posts: {
+        Row: {
+          caption: string | null
+          category: string | null
+          created_at: string
+          id: string
+          image_urls: string[]
+          is_approved: boolean
+          is_featured: boolean
+          location: string | null
+          posted_by: string
+          poster_type: Database["public"]["Enums"]["catalogue_poster_type"]
+          primary_image: string | null
+          professional_id: string
+          save_count: number
+          tags: string[]
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          caption?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_urls: string[]
+          is_approved?: boolean
+          is_featured?: boolean
+          location?: string | null
+          posted_by: string
+          poster_type?: Database["public"]["Enums"]["catalogue_poster_type"]
+          primary_image?: string | null
+          professional_id: string
+          save_count?: number
+          tags?: string[]
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          caption?: string | null
+          category?: string | null
+          created_at?: string
+          id?: string
+          image_urls?: string[]
+          is_approved?: boolean
+          is_featured?: boolean
+          location?: string | null
+          posted_by?: string
+          poster_type?: Database["public"]["Enums"]["catalogue_poster_type"]
+          primary_image?: string | null
+          professional_id?: string
+          save_count?: number
+          tags?: string[]
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_posts_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_posts_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogue_saves: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_saves_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_saves_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -522,6 +707,53 @@ export type Database = {
           },
           {
             foreignKeyName: "connections_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_library: {
+        Row: {
+          body: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at: string
+          id: string
+          is_published: boolean
+          metadata: Json
+          professional_id: string
+          published_at: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          metadata?: Json
+          professional_id: string
+          published_at?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          content_type?: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          metadata?: Json
+          professional_id?: string
+          published_at?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_library_professional_id_fkey"
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "professional_profiles"
@@ -768,6 +1000,41 @@ export type Database = {
             columns: ["review_id"]
             isOneToOne: false
             referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_referrals: {
+        Row: {
+          clicked_at: string
+          id: string
+          ip_hash: string | null
+          professional_id: string
+          referral_url: string
+          user_agent: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          professional_id: string
+          referral_url: string
+          user_agent?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          ip_hash?: string | null
+          professional_id?: string
+          referral_url?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_referrals_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2263,6 +2530,74 @@ export type Database = {
           },
         ]
       }
+      sponsor_campaigns: {
+        Row: {
+          ad_type: Database["public"]["Enums"]["ad_type"]
+          amount_paid_ttd: number | null
+          clicks: number
+          company_name: string
+          contact_email: string
+          created_at: string
+          creative_url: string | null
+          ends_at: string
+          id: string
+          impressions: number
+          is_active: boolean
+          link_url: string | null
+          package_id: string | null
+          placement_zone: string | null
+          starts_at: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          ad_type: Database["public"]["Enums"]["ad_type"]
+          amount_paid_ttd?: number | null
+          clicks?: number
+          company_name: string
+          contact_email: string
+          created_at?: string
+          creative_url?: string | null
+          ends_at: string
+          id?: string
+          impressions?: number
+          is_active?: boolean
+          link_url?: string | null
+          package_id?: string | null
+          placement_zone?: string | null
+          starts_at: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          ad_type?: Database["public"]["Enums"]["ad_type"]
+          amount_paid_ttd?: number | null
+          clicks?: number
+          company_name?: string
+          contact_email?: string
+          created_at?: string
+          creative_url?: string | null
+          ends_at?: string
+          id?: string
+          impressions?: number
+          is_active?: boolean
+          link_url?: string | null
+          package_id?: string | null
+          placement_zone?: string | null
+          starts_at?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_campaigns_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ad_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_orders: {
         Row: {
           admin_notes: string | null
@@ -2821,6 +3156,50 @@ export type Database = {
           },
         ]
       }
+      whatsapp_messages: {
+        Row: {
+          created_at: string
+          direction: Database["public"]["Enums"]["whatsapp_direction"]
+          from_number: string
+          id: string
+          media_url: string | null
+          message: string
+          metadata: Json
+          professional_id: string
+          to_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: Database["public"]["Enums"]["whatsapp_direction"]
+          from_number: string
+          id?: string
+          media_url?: string | null
+          message: string
+          metadata?: Json
+          professional_id: string
+          to_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: Database["public"]["Enums"]["whatsapp_direction"]
+          from_number?: string
+          id?: string
+          media_url?: string | null
+          message?: string
+          metadata?: Json
+          professional_id?: string
+          to_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2844,6 +3223,14 @@ export type Database = {
         Args: { capability_key: string }
         Returns: boolean
       }
+      increment_campaign_clicks: {
+        Args: { campaign_id: string }
+        Returns: undefined
+      }
+      increment_campaign_impressions: {
+        Args: { campaign_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_owner_admin: { Args: never; Returns: boolean }
       matches_grants: {
@@ -2853,6 +3240,15 @@ export type Database = {
       owns_professional_profile: {
         Args: { profile_id: string }
         Returns: boolean
+      }
+      record_insurance_referral: {
+        Args: {
+          client_ip?: string
+          client_user_agent?: string
+          target_professional: string
+          url: string
+        }
+        Returns: undefined
       }
       slugify: { Args: { input: string }; Returns: string }
       test_dblink_conninfo: { Args: never; Returns: string }
