@@ -23,9 +23,96 @@ import { Table, type TableColumn } from '@/components/ui/Table'
 import { Pagination } from '@/components/ui/Pagination'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { Banner } from '@/components/ui/Banner'
+import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
+import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
+import { ReviewCard, DistributionBar } from '@/components/shared/ReviewCard'
+import { StatCard } from '@/components/shared/StatCard'
+import { Timeline } from '@/components/shared/Timeline'
+import { PricingTierCards } from '@/components/shared/PricingTierCards'
+import { AdSlot } from '@/components/shared/AdSlot'
+import { CatalogueGrid } from '@/components/shared/CatalogueGrid'
+import type { ProfessionalCardData } from '@/lib/marketplace/professional-card'
 import { useTheme, type ThemePreference } from '@/components/layout/ThemeProvider'
 import { formatTTD, formatRating, formatReviewCount, formatDate } from '@/lib/utils/format'
 import { TIERS, TIER_ORDER, monthlyTotal } from '@/lib/constants/pricing'
+
+// ── Pattern fixtures ─────────────────────────────────────────────────────────
+// Same realistic T&T supply the dev seed uses, so the composed patterns are
+// reviewed against data the real surfaces will carry.
+
+const CARD_FIXTURE: ProfessionalCardData = {
+  id: 'p1',
+  slug: 'baptiste-electrical',
+  name: 'Baptiste Electrical Services',
+  avatarUrl: null,
+  category: { slug: 'electrician', name: 'Electrician' },
+  areas: ['Arima', 'Tunapuna', 'Sangre Grande', 'Port of Spain'],
+  rating: { average: 4.5, count: 12 },
+  verification: { idVerified: true, insured: true, fullyVerified: true },
+  track: 'registered',
+  fromPriceTTD: 250,
+  responseHint: 'Responds in ~2h',
+}
+
+const NEW_CARD_FIXTURE: ProfessionalCardData = {
+  id: 'p2',
+  slug: 'kevon-web',
+  name: 'Kevon Samuel Web',
+  avatarUrl: null,
+  category: { slug: 'web-designer', name: 'Web Designer' },
+  areas: ['St Augustine', 'Curepe'],
+  rating: null, // below the D40 threshold — renders the "New" chip
+  verification: { idVerified: false, insured: false, fullyVerified: false },
+  track: 'student',
+  fromPriceTTD: 1500,
+}
+
+const TIMELINE_EVENTS = [
+  {
+    id: '1',
+    kind: 'status_change',
+    label: 'Enquiry sent',
+    timestamp: '2026-07-18T09:00:00Z',
+    status: 'pending' as const,
+  },
+  {
+    id: '2',
+    kind: 'status_change',
+    label: 'Accepted by professional',
+    detail: 'Baptiste Electrical',
+    timestamp: '2026-07-18T11:30:00Z',
+    status: 'accepted' as const,
+  },
+  {
+    id: '3',
+    kind: 'invoice',
+    label: 'Invoice paid',
+    detail: formatTTD(1800),
+    timestamp: '2026-07-19T16:05:00Z',
+    status: 'paid' as const,
+  },
+]
+
+const CATALOGUE_FIXTURE = [
+  {
+    id: 'c1',
+    primaryImage: '',
+    imageUrls: [''],
+    caption: 'Rewired a whole house in Arima',
+    professional: { slug: 'baptiste-electrical', name: 'Baptiste Electrical' },
+    saveCount: 8,
+    aspectRatio: 4 / 5,
+  },
+  {
+    id: 'c2',
+    primaryImage: '',
+    imageUrls: [''],
+    caption: 'Panel upgrade, Chaguanas',
+    professional: { slug: 'persad-plumbing', name: 'Persad Plumbing' },
+    saveCount: 3,
+    aspectRatio: 1,
+  },
+]
 
 // ── Gallery fixtures ─────────────────────────────────────────────────────────
 // Deliberately the same shape of data the real surfaces carry — Trinidad areas,
@@ -685,6 +772,134 @@ export default function DevKitPage() {
             )
           })}
         </div>
+      </Section>
+
+      <Section
+        title="Marketplace patterns"
+        note="The composed, domain-aware components pages assemble from (S074). ProfessionalCard is one card for both roles; the 'New' variant shows below the 3-review rating threshold (D40)."
+      >
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ProfessionalCard data={CARD_FIXTURE} source="search" onWhatsApp={() => undefined} />
+            <ProfessionalCard data={NEW_CARD_FIXTURE} source="search" />
+            <ProfessionalCard data={{ ...CARD_FIXTURE, sponsored: true }} source="search" />
+            <ProfessionalCard data={CARD_FIXTURE} variant="compact" source="saved" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <WhatsAppButton
+              phone="+18683552214"
+              template="storefront_intro"
+              templateData={{ name: 'Darren' }}
+              context="storefront"
+              variant="primary-position"
+            />
+            <WhatsAppButton
+              phone="+18683552214"
+              template="storefront_intro"
+              templateData={{ name: 'Darren' }}
+              context="storefront"
+              variant="secondary"
+            />
+            <WhatsAppButton
+              phone="+18683552214"
+              template="storefront_intro"
+              templateData={{ name: 'Darren' }}
+              context="storefront"
+              variant="icon"
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            <StatCard
+              label="Profile views"
+              value={1284}
+              format="int"
+              trend={{ delta: 12, direction: 'up' }}
+            />
+            <StatCard label="Earnings this month" value={9800} format="ttd" />
+            <StatCard
+              label="Response rate"
+              value={94}
+              format="percent"
+              trend={{ delta: 3, direction: 'up' }}
+            />
+            <StatCard
+              label="Churn"
+              value={2}
+              format="percent"
+              trend={{ delta: 1, direction: 'down', goodIsUp: false }}
+            />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-3">
+              <ReviewCard
+                review={{
+                  reviewerLabel: 'Simone J.',
+                  date: '18 Jul 2026',
+                  stars: 5,
+                  testimonial:
+                    'Came the same evening, found the fault in the panel and had everything working within two hours. Explained what caused it so it does not happen again. Genuinely the most professional service I have had in years.',
+                  verifiedJob: true,
+                  seeded: false,
+                }}
+                flaggable
+                onFlag={() => undefined}
+              />
+              <ReviewCard
+                review={{
+                  reviewerLabel: 'Devon R.',
+                  date: '12 Jun 2026',
+                  stars: 4,
+                  testimonial: 'Good work and fair price.',
+                  verifiedJob: false,
+                  seeded: true,
+                }}
+              />
+            </div>
+            <DistributionBar
+              distribution={{ '5': 9, '4': 2, '3': 1, '2': 0, '1': 0 }}
+              average={4.5}
+            />
+          </div>
+
+          <Timeline events={TIMELINE_EVENTS} />
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <AdSlot zone="pro_workspace" campaign={null} />
+            <AdSlot
+              zone="pro_workspace"
+              campaign={{
+                id: 'ad1',
+                creativeUrl: '',
+                linkUrl: 'https://example.test',
+                companyName: 'Republic Bank',
+              }}
+            />
+          </div>
+
+          <CatalogueGrid
+            posts={CATALOGUE_FIXTURE}
+            onLoadMore={() => undefined}
+            hasMore={false}
+            loading={false}
+          />
+        </div>
+      </Section>
+
+      <Section
+        title="Pricing tiers (crossover-aware)"
+        note="Rendered entirely from pricing.ts — the account layer shows as its own line under the cards, framed as the Registered rate, never a surcharge (D49)."
+      >
+        <PricingTierCards
+          tiers={TIER_ORDER.map((id) => TIERS[id])}
+          accountTrack="sole_trader"
+          billingPeriod="monthly"
+          pioneerActive
+          context="public"
+          onSelect={() => undefined}
+        />
       </Section>
 
       {/* Mounted once for the whole gallery — the live region must not be duplicated. */}

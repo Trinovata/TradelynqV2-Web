@@ -43,6 +43,14 @@
   --destructive: #dc4b4b;
   --info: #3e72c4;
 
+  /* Brand green of an external channel, not a status. WhatsApp is the primary
+     contact channel in T&T, and the glyph's colour is a recognition signal — so
+     it lives in the token layer (no hex in components) but stays OUT of the
+     status vocabulary, which owns success/warning/etc. Used only on the
+     WhatsApp glyph, never on a surface. Same value in both themes: a brand
+     colour does not re-tint with the UI. */
+  --whatsapp: #25d366;
+
   /* Focus. One of exactly three places cyan survives (ring, logo, M13). */
   --ring: #00bdd6;
 
@@ -100,6 +108,7 @@
   --color-success: var(--success);
   --color-destructive: var(--destructive);
   --color-info: var(--info);
+  --color-whatsapp: var(--whatsapp);
 
   --color-ring: var(--ring);
 
