@@ -314,11 +314,29 @@ export async function requireProfessional(
  * Keep in step with the published documents. A version here with no
  * corresponding published document blocks every gated action on the platform.
  */
-export const CURRENT_LEGAL_VERSIONS: Readonly<Record<string, string>> = {
-  terms_of_service: '2.0',
-  privacy_policy: '2.0',
-  acceptable_use: '1.0',
-  professional_agreement: '1.0',
+/**
+ * The in-force version of each legal document, keyed by the SAME slugs the
+ * database stores and the API accepts.
+ *
+ * These were `terms_of_service` / `privacy_policy` / … — long keys that could
+ * never match a stored acceptance, because `legal_acceptances.document_type`
+ * carries a CHECK constraint permitting only `privacy | terms | eula | reviews`
+ * (migration `…_reviews_disputes.sql`) and the API pack (`api-marketplace.md`
+ * §7) accepts exactly those four. So the old constant made `ensureLegalAcceptances`
+ * mark every document permanently missing: the accepted set is built from stored
+ * `terms@2.0` rows, and `CURRENT_LEGAL_VERSIONS['terms_of_service']` never
+ * appeared in it. Reconciled to the short slugs, which the table, the contract,
+ * and the acceptance modal all already use. Detail file + schema outrank the
+ * chapter that used the long names.
+ */
+export const LEGAL_DOCUMENTS = ['privacy', 'terms', 'eula', 'reviews'] as const
+export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number]
+
+export const CURRENT_LEGAL_VERSIONS: Readonly<Record<LegalDocument, string>> = {
+  privacy: '2.0',
+  terms: '2.0',
+  eula: '1.0',
+  reviews: '1.0',
 } as const
 
 /**
@@ -327,11 +345,20 @@ export const CURRENT_LEGAL_VERSIONS: Readonly<Record<string, string>> = {
  * Returns the missing document types so the client can render the acceptance
  * modal inline rather than dead-ending the user.
  */
-export async function ensureLegalAcceptances(
+/**
+ * Which of the required documents the caller has NOT accepted at the in-force
+ * version. The shared truth behind both the gate and `GET /api/legal/status`, so
+ * the two can never disagree about what is outstanding.
+ *
+ * On a database error it returns a Failure rather than an empty list — an
+ * unreadable acceptances table must not read as "nothing outstanding", which
+ * would open every legal gate.
+ */
+export async function missingLegalAcceptances(
   context: AuthContext,
   requiredDocuments: readonly string[]
-): Promise<AccessResult<AuthContext>> {
-  if (requiredDocuments.length === 0) return context
+): Promise<AccessResult<{ missing: string[] }>> {
+  if (requiredDocuments.length === 0) return { missing: [] }
 
   const { data, error } = await context.supabase
     .from('legal_acceptances')
@@ -351,17 +378,34 @@ export async function ensureLegalAcceptances(
   )
 
   const missing = requiredDocuments.filter((type) => {
-    const required = CURRENT_LEGAL_VERSIONS[type]
-    if (!required) {
+    // `Object.hasOwn`, not a bare index. `CURRENT_LEGAL_VERSIONS[type]` walks the
+    // prototype chain, so a caller-supplied `constructor` or `toString` returns a
+    // truthy function and slips past a `!required` check — failing closed by luck
+    // rather than by decision, and without the log that flags a bad call site.
+    if (!Object.hasOwn(CURRENT_LEGAL_VERSIONS, type)) {
       // An unknown document cannot be satisfied, so it must fail closed rather
       // than be silently skipped — a typo in a call site would otherwise remove
       // a legal gate without anyone noticing.
       logger.error('access:unknown_legal_document', { documentType: type })
       return true
     }
+    const required = CURRENT_LEGAL_VERSIONS[type as LegalDocument]
     return !accepted.has(`${type}@${required}`)
   })
 
+  return { missing }
+}
+
+export async function ensureLegalAcceptances(
+  context: AuthContext,
+  requiredDocuments: readonly string[]
+): Promise<AccessResult<AuthContext>> {
+  if (requiredDocuments.length === 0) return context
+
+  const result = await missingLegalAcceptances(context, requiredDocuments)
+  if ('response' in result) return result
+
+  const { missing } = result
   if (missing.length > 0) {
     return { ok: false, response: err('LEGAL_ACCEPTANCE_REQUIRED', { missingDocuments: missing }) }
   }

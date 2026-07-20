@@ -569,12 +569,12 @@ describe('ensureLegalAcceptances — the version check', () => {
       context({
         legal_acceptances: {
           data: [
-            { document_type: 'terms_of_service', document_version: '2.0' },
-            { document_type: 'privacy_policy', document_version: '2.0' },
+            { document_type: 'terms', document_version: '2.0' },
+            { document_type: 'privacy', document_version: '2.0' },
           ],
         },
       }),
-      ['terms_of_service', 'privacy_policy']
+      ['terms', 'privacy']
     )
     expect(result.ok).toBe(true)
   })
@@ -585,17 +585,15 @@ describe('ensureLegalAcceptances — the version check', () => {
     const result = await ensureLegalAcceptances(
       context({
         legal_acceptances: {
-          data: [{ document_type: 'terms_of_service', document_version: '1.0' }],
+          data: [{ document_type: 'terms', document_version: '1.0' }],
         },
       }),
-      ['terms_of_service']
+      ['terms']
     )
     const { status, body } = await refusal(result)
     expect(status).toBe(403)
     expect(body.code).toBe('LEGAL_ACCEPTANCE_REQUIRED')
-    expect((body.details as { missingDocuments: string[] }).missingDocuments).toEqual([
-      'terms_of_service',
-    ])
+    expect((body.details as { missingDocuments: string[] }).missingDocuments).toEqual(['terms'])
   })
 
   it('rejects a NEWER version than the one in force — a forged row cannot satisfy the gate', async () => {
@@ -604,10 +602,10 @@ describe('ensureLegalAcceptances — the version check', () => {
     const result = await ensureLegalAcceptances(
       context({
         legal_acceptances: {
-          data: [{ document_type: 'terms_of_service', document_version: '99.0' }],
+          data: [{ document_type: 'terms', document_version: '99.0' }],
         },
       }),
-      ['terms_of_service']
+      ['terms']
     )
     expect(result.ok).toBe(false)
   })
@@ -644,7 +642,7 @@ describe('ensureLegalAcceptances — the version check', () => {
   it('fails CLOSED with INTERNAL when the acceptance lookup errors', async () => {
     const result = await ensureLegalAcceptances(
       context({ legal_acceptances: { data: null, error: { code: '08006' } } }),
-      ['terms_of_service']
+      ['terms']
     )
     const { status, body } = await refusal(result)
     expect(status).toBe(500)
@@ -654,19 +652,19 @@ describe('ensureLegalAcceptances — the version check', () => {
   it('treats no acceptance rows at all as every document outstanding', async () => {
     const result = await ensureLegalAcceptances(
       context({ legal_acceptances: { data: null, error: null } }),
-      ['terms_of_service', 'privacy_policy']
+      ['terms', 'privacy']
     )
     const { body } = await refusal(result)
     expect((body.details as { missingDocuments: string[] }).missingDocuments).toEqual([
-      'terms_of_service',
-      'privacy_policy',
+      'terms',
+      'privacy',
     ])
   })
 
   it('scopes the acceptance query to the calling user', async () => {
     const double = makeSupabase({ legal_acceptances: { data: [] } })
     await ensureLegalAcceptances({ ok: true, userId: 'user-1', supabase: double.client as never }, [
-      'terms_of_service',
+      'terms',
     ])
     expect(argsFor(double.log, 'legal_acceptances', 'eq')).toEqual(['user_id', 'user-1'])
   })
