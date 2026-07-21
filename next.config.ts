@@ -125,6 +125,18 @@ const connectSrc = [
   'https://*.ingest.sentry.io',
 ]
 if (isPreviewDeployment) connectSrc.push('https://vercel.live')
+// The local Supabase stack (`supabase start`) is served over http on a loopback
+// port, which `*.supabase.co` does not cover — so in development the browser
+// client cannot reach it and every sign-in, query, and realtime socket is blocked
+// by CSP. Allow the loopback origins in dev only; production never sees them.
+if (isDev) {
+  connectSrc.push(
+    'http://127.0.0.1:54321',
+    'ws://127.0.0.1:54321',
+    'http://localhost:54321',
+    'ws://localhost:54321'
+  )
+}
 
 const frameSrc = ["'self'"]
 if (isPreviewDeployment) frameSrc.push('https://vercel.live')

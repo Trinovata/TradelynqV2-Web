@@ -31,15 +31,35 @@ export const ROUTE_NAMESPACES: Record<Role, readonly string[]> = {
   professional: [
     '/dashboard',
     '/onboarding',
+    // The workspace shell (playbook S105) renders the flat paths the copy deck's
+    // sidebar (05 §5) names. FLAG (reconcile in Phase 5): '/enquiries', '/jobs',
+    // and '/invoices' are also listed under `customer` below — the copy deck puts
+    // the professional inbox at '/enquiries' while this contract had reserved
+    // '/enquiries-received'. `namespaceOwner` checks professional before customer,
+    // so professionals win today; the customer portal will need distinct paths
+    // (e.g. nest customer views under '/home') or the professional workspace moves
+    // to a '/work'-style prefix. Not silently resolved — logged here as a D-flag.
+    '/enquiries',
     '/enquiries-received',
     '/quotes',
+    '/jobs',
+    '/bookings',
+    '/invoices',
     '/work',
     '/clients',
     '/storefront',
+    '/portfolio',
+    '/offerings',
+    '/reviews',
     '/growth',
+    '/analytics',
+    '/readiness',
+    '/referrals',
     '/subscription',
     '/tools',
+    '/credits',
     '/integrations',
+    '/settings',
   ],
   admin: ['/admin'],
 } as const
