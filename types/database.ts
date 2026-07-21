@@ -3241,6 +3241,27 @@ export type Database = {
         Args: { profile_id: string }
         Returns: boolean
       }
+      professional_enquiry_inbox: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          agreed_price_ttd: number
+          agreed_timeline: string
+          category_id: string
+          completed_at: string
+          contact_preference: Database["public"]["Enums"]["contact_preference"]
+          created_at: string
+          customer_first_name: string
+          declined_reason: string
+          description: string
+          id: string
+          preferred_date: string
+          professional_notes: string
+          scope_note: string
+          source: Database["public"]["Enums"]["job_source"]
+          status: Database["public"]["Enums"]["enquiry_status"]
+        }[]
+      }
       record_insurance_referral: {
         Args: {
           client_ip?: string
