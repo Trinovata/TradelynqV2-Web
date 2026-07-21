@@ -385,3 +385,27 @@
     transform: translateY(0);
   }
 }
+
+/* Connection Field — the marketplace as a living network. A bright dash flows
+   along each edge (customer → professional), and nodes breathe. Only
+   stroke-dashoffset and opacity animate, so it stays cheap; staggered per-edge
+   durations keep it from looking mechanical. */
+@keyframes tlSignalFlow {
+  from {
+    stroke-dashoffset: var(--signal-length, 220);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes tlNodeBreathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    r: var(--node-r, 4);
+  }
+  50% {
+    opacity: 1;
+    r: calc(var(--node-r, 4) * 1.35);
+  }
+}

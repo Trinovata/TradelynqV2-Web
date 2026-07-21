@@ -35,6 +35,7 @@ import { ProblemSolution } from '@/components/shared/ProblemSolution'
 import { FlowLine } from '@/components/shared/FlowLine'
 import { NumberTicker } from '@/components/shared/NumberTicker'
 import { PhoneFlow } from '@/components/shared/PhoneFlow'
+import { ConnectionField } from '@/components/shared/ConnectionField'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
@@ -97,6 +98,9 @@ export default async function LandingPage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden">
+        {/* Signature: the marketplace as a living network of connections,
+            signals flowing from "You" out to the trades. */}
+        <ConnectionField />
         <DotGrid />
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-16 text-center sm:px-6 sm:pt-32 sm:pb-24">
           <span className="border-border bg-card text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
