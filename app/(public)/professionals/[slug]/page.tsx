@@ -31,7 +31,8 @@ export async function generateMetadata({
   const where = pro.areas[0] ? ` in ${pro.areas[0]}` : ''
   return {
     title: `${pro.name} — ${pro.category?.name ?? 'Professional'}${where}`,
-    description: pro.tagline ?? `${pro.name} on TradeLynq — verified, reviewed, reachable directly.`,
+    description:
+      pro.tagline ?? `${pro.name} on TradeLynq — verified, reviewed, reachable directly.`,
   }
 }
 
@@ -73,7 +74,9 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
       <Breadcrumbs
         items={[
           { label: 'Home', href: '/' },
-          ...(pro.category ? [{ label: pro.category.name, href: `/search?q=${pro.category.slug}` }] : []),
+          ...(pro.category
+            ? [{ label: pro.category.name, href: `/search?q=${pro.category.slug}` }]
+            : []),
           { label: pro.name },
         ]}
       />
@@ -183,7 +186,11 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
         </div>
 
         {/* ── Sticky action rail (desktop) / bottom bar (mobile) ── */}
-        <StorefrontActions name={pro.name} category={pro.category?.name ?? null} fromPrice={fromPrice} />
+        <StorefrontActions
+          name={pro.name}
+          category={pro.category?.name ?? null}
+          fromPrice={fromPrice}
+        />
       </div>
     </div>
   )

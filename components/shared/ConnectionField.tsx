@@ -148,7 +148,7 @@ export function ConnectionField({ className = '' }: { className?: string }) {
                 cx={node.x}
                 cy={node.y}
                 r={7}
-                className="fill-none stroke-brand-cyan motion-safe:animate-[tlNodeBreathe_3s_ease-in-out_infinite]"
+                className="stroke-brand-cyan fill-none motion-safe:animate-[tlNodeBreathe_3s_ease-in-out_infinite]"
                 strokeWidth={1.5}
               />
             )}

@@ -89,7 +89,7 @@ export function HeroSearch() {
         <button
           type="submit"
           aria-label="Find professionals"
-          className="bg-accent text-accent-foreground hover:bg-accent/90 focus-visible:outline-ring flex h-11 items-center gap-2 rounded-[--radius-control] px-4 text-sm font-medium transition-[background-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 sm:px-5"
+          className="bg-accent text-accent-foreground hover:bg-accent/90 focus-visible:outline-ring flex h-11 items-center gap-2 rounded-[--radius-control] px-4 text-sm font-medium transition-[background-color,transform] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98] sm:px-5"
         >
           <span className="hidden sm:inline">Find pros</span>
           <ArrowRight className="size-4" aria-hidden="true" />
