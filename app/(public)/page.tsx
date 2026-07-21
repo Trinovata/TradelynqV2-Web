@@ -36,7 +36,7 @@ import { FlowLine } from '@/components/shared/FlowLine'
 import { NumberTicker } from '@/components/shared/NumberTicker'
 import { PhoneFlow } from '@/components/shared/PhoneFlow'
 import { ConnectionField } from '@/components/shared/ConnectionField'
-import { Card } from '@/components/ui/Card'
+import { CategoryShowcase } from '@/components/shared/CategoryShowcase'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
 import { HeroSearch } from './HeroSearch'
@@ -307,40 +307,7 @@ export default async function LandingPage() {
               />
             </Link>
           </Reveal>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {categories.slice(0, 8).map((node, index) => (
-              <Reveal key={node.parent.slug} delay={Math.min(index, 7) * 40}>
-                <Link
-                  href={`/categories/${node.parent.slug}`}
-                  className="group focus-visible:outline-ring block h-full rounded-[--radius-card] focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  <Card
-                    interactive
-                    padding="compact"
-                    className="h-full transition-transform duration-200 group-hover:-translate-y-0.5"
-                  >
-                    <span className="flex items-baseline justify-between gap-2">
-                      <span className="text-foreground font-medium">{node.parent.name}</span>
-                      {node.children.length > 0 && (
-                        <span className="text-muted font-mono text-xs tabular-nums">
-                          {node.children.length}
-                        </span>
-                      )}
-                    </span>
-                    {node.children.length > 0 && (
-                      <span className="text-muted mt-1 block text-xs">
-                        {node.children
-                          .slice(0, 3)
-                          .map((c) => c.name)
-                          .join(' · ')}
-                        {node.children.length > 3 ? ' …' : ''}
-                      </span>
-                    )}
-                  </Card>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
+          <CategoryShowcase categories={categories} />
         </section>
       )}
 
