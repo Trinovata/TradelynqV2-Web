@@ -1,4 +1,8 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
 
 /* ============================================================================
    TradeLynq V2 — the semantic token layer (playbook S058)
@@ -16,7 +20,7 @@
    decision is a value edit in this file alone — never a component change.
    ============================================================================ */
 
-/* ── Light: the default ─────────────────────────────────────────────────── */
+/* ── Light: the default (R2 "Ink & Paper") ──────────────────────────────── */
 
 :root {
   /* Surfaces */
@@ -43,22 +47,58 @@
   --destructive: #dc4b4b;
   --info: #3e72c4;
 
-  /* Brand green of an external channel, not a status. WhatsApp is the primary
-     contact channel in T&T, and the glyph's colour is a recognition signal — so
-     it lives in the token layer (no hex in components) but stays OUT of the
-     status vocabulary, which owns success/warning/etc. Used only on the
-     WhatsApp glyph, never on a surface. Same value in both themes: a brand
-     colour does not re-tint with the UI. */
+  /* WhatsApp brand green — a recognition signal, outside the status vocabulary. */
   --whatsapp: #25d366;
 
-  /* Focus. One of exactly three places cyan survives (ring, logo, M13). */
+  /* V1 brand accents, carried forward by Gregg's direction (20 Jul): cyan and
+     amber return as ACCENT colours for infographic moments — tickers, flow
+     lines, coloured proof icons — not as surface colours. `-ink` variants are
+     the AA-safe text versions (V1's own contrast-checked values). */
+  --brand-cyan: hsl(187 100% 42%);
+  --brand-cyan-ink: hsl(187 100% 27%);
+  --brand-amber: hsl(38 92% 50%);
+  --brand-amber-ink: hsl(32 95% 38%);
+
+  /* Focus ring — the V1 cyan. */
   --ring: #00bdd6;
 
-  /* Layout */
+  /* Aurora — the living hero, recoloured to the R2 palette: a cool cyan/slate
+     mist over the paper, low chroma so it reads as premium, not tropical. The
+     one place the R2 cyan gets to breathe as atmosphere rather than a ring. */
+  --aurora-1: oklch(0.88 0.05 215);
+  --aurora-2: oklch(0.9 0.03 250);
+  --aurora-3: oklch(0.93 0.015 250);
+
   --desktop-sidebar-offset: 340px;
+
+  /* ── shadcn/registry compatibility — ALIASED onto our system so any component
+     added via the shadcn CLI renders on-brand automatically. Never restyle
+     these directly; change the semantic tokens above instead. */
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--card-subtle);
+  --secondary-foreground: var(--body);
+  --muted-foreground: var(--muted);
+  --input: var(--border);
+  --radius: 0.625rem;
+  --chart-1: var(--brand-cyan);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--brand-amber);
+  --chart-5: var(--destructive);
+  --sidebar-foreground: var(--accent-foreground);
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--foreground);
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
-/* ── Dark: redesigned, not inverted ─────────────────────────────────────── */
+/* ── Dark: redesigned, not inverted (R2) ────────────────────────────────── */
 
 .dark {
   --background: #0b0f14;
@@ -71,8 +111,7 @@
   --muted: #7d8695;
   --border: #232b37;
 
-  /* Inverted ink: a LIGHT accent, so accent-foreground must go dark. White
-     text on this fill would fail contrast outright. */
+  /* Inverted ink: a LIGHT accent, so accent-foreground goes dark. */
   --accent: #d5d9de;
   --accent-ink: #d5d9de;
   --accent-foreground: #0b0f14;
@@ -84,6 +123,41 @@
   --info: #5589d6;
 
   --ring: #00a8bf;
+
+  /* V1 accents on the dark ink: lifted lightness so they carry, ink variants
+     bright enough to read as text on dark surfaces. */
+  --brand-cyan: hsl(187 90% 48%);
+  --brand-cyan-ink: hsl(187 85% 62%);
+  --brand-amber: hsl(38 92% 55%);
+  --brand-amber-ink: hsl(42 95% 62%);
+
+  /* Aurora on the dark ink: deep cyan/slate glow, restrained. */
+  --aurora-1: oklch(0.45 0.07 215);
+  --aurora-2: oklch(0.4 0.05 250);
+  --aurora-3: oklch(0.38 0.03 230);
+
+  /* shadcn/registry compatibility — aliased, see the light block. */
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--card-subtle);
+  --secondary-foreground: var(--body);
+  --muted-foreground: var(--muted);
+  --input: var(--border);
+  --chart-1: var(--brand-cyan);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--brand-amber);
+  --chart-5: var(--destructive);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--background);
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 /* ── Tailwind mapping ───────────────────────────────────────────────────── */
@@ -109,12 +183,24 @@
   --color-destructive: var(--destructive);
   --color-info: var(--info);
   --color-whatsapp: var(--whatsapp);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-cyan-ink: var(--brand-cyan-ink);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-ink: var(--brand-amber-ink);
 
   --color-ring: var(--ring);
 
-  /* Self-hosted only. No external font requests — the fallback stack keeps
-     metrics close so swapping in the real faces (S059) causes no shift. */
-  --font-sans: var(--font-satoshi), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-aurora-1: var(--aurora-1);
+  --color-aurora-2: var(--aurora-2);
+  --color-aurora-3: var(--aurora-3);
+
+  /* Real, shippable faces (self-hosted at build by next/font — zero external
+     requests). Bricolage Grotesque for display: warm, humanist, a little
+     characterful — it carries the "alive" of Caribbean Vivid without being an
+     AI-tell display font. Hanken Grotesk for body: clean, friendly, legible at
+     small sizes. JetBrains Mono keeps the tabular numerals the design law wants. */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-bricolage), var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* Radius law — nested is always parent minus gap, never equal. */
@@ -152,6 +238,35 @@
   --ease-enter: cubic-bezier(0, 0, 0.2, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+  /* --font-heading removed: headings use --font-display (Bricolage). */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-input: var(--input);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
@@ -159,6 +274,7 @@
 @layer base {
   * {
     border-color: var(--border);
+    @apply border-border outline-ring/50;
   }
 
   body {
@@ -166,6 +282,7 @@
     color: var(--body);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
 
   h1,
@@ -176,6 +293,11 @@
   h6 {
     color: var(--foreground);
     text-wrap: balance;
+    /* Headings carry the display voice — the warm, humanist Bricolage — while
+       body stays in Hanken. This is the pairing the design law asks for, applied
+       once so every heading inherits it. */
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
 
   p {
@@ -209,5 +331,81 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ── Signature motion ────────────────────────────────────────────────────────
+   The living hero. Three blurred colour fields drift on slow, offset paths —
+   only transform and opacity move, so the GPU composites it and the main thread
+   stays free. Long, prime-ish durations keep the loop from ever looking
+   periodic. Under reduced-motion the fields hold still (the rule above zeroes
+   the animation), so the hero is a calm gradient rather than a moving one. */
+
+@keyframes tlAurora1 {
+  0%,
+  100% {
+    transform: translate(-8%, -6%) scale(1);
+  }
+  50% {
+    transform: translate(9%, 8%) scale(1.18);
+  }
+}
+@keyframes tlAurora2 {
+  0%,
+  100% {
+    transform: translate(6%, 4%) scale(1.1);
+  }
+  50% {
+    transform: translate(-8%, -6%) scale(0.92);
+  }
+}
+@keyframes tlAurora3 {
+  0%,
+  100% {
+    transform: translate(4%, -8%) scale(0.95);
+  }
+  50% {
+    transform: translate(-6%, 10%) scale(1.2);
+  }
+}
+
+/* Section entrance: a short rise + fade, played once as a section scrolls in.
+   Paired with an IntersectionObserver so it fires at the right moment, not all
+   at once on load. */
+@keyframes tlReveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Connection Field — the marketplace as a living network. A bright dash flows
+   along each edge (customer → professional), and nodes breathe. Only
+   stroke-dashoffset and opacity animate, so it stays cheap; staggered per-edge
+   durations keep it from looking mechanical. */
+@keyframes tlSignalFlow {
+  from {
+    stroke-dashoffset: var(--signal-length, 220);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes tlNodeBreathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    r: var(--node-r, 4);
+  }
+  50% {
+    opacity: 1;
+    r: calc(var(--node-r, 4) * 1.35);
   }
 }
