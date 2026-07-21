@@ -4,9 +4,20 @@
  * R2 "Ink & Paper" palette, real display typography (Bricolage Grotesque), and a
  * clean editorial hero — the type carries it, over a faint monochrome dot grid.
  * The signature moment is the scroll-driven 3D showcase: the real product,
- * browser-framed, rotating into view. Server-rendered so the first paint is
- * content; choreographed with scroll reveals. Real supply only — the showcase
- * and proof strips render nothing when there are no active professionals.
+ * browser-framed, rotating into view.
+ *
+ * Persuasion structure (each section is one self-contained unit — short benefit
+ * headline, one-line support, a proof element):
+ *
+ *   hero (search + trust strip) → product showcase → problem/solution ledger →
+ *   how it works → categories (real counts) → featured professionals (real
+ *   supply) → the three promises → professional CTA.
+ *
+ * Two hard rules shape everything here. Only real data renders — the showcase,
+ * category counts, and proof rails come from live queries and disappear rather
+ * than fake it when supply is empty. And trust claims are structural promises
+ * (identity checked, reviews moderated, no booking fees), never invented
+ * numbers.
  */
 import Link from 'next/link'
 import {
@@ -20,11 +31,62 @@ import {
 } from 'lucide-react'
 import { getCategoryTree, getFeaturedProfessionals } from '@/lib/marketplace/queries'
 import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
+import { ProblemSolution } from '@/components/shared/ProblemSolution'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
 import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { HeroSearch } from './HeroSearch'
+
+/**
+ * The faint monochrome dot grid behind the hero and the closing CTA — the same
+ * texture bookending the page so it opens and closes on one visual note. No
+ * colour: it only keeps the field from reading as flat white.
+ */
+function DotGrid() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_35%,black,transparent)] opacity-[0.4]"
+      style={{
+        backgroundImage:
+          'radial-gradient(color-mix(in oklch, var(--muted) 22%, transparent) 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+      }}
+    />
+  )
+}
+
+/**
+ * One header shape for every section: a quiet uppercase eyebrow, a display
+ * headline, one supporting line. The repetition is the point — consistent
+ * rhythm is what makes a long page read as designed rather than assembled.
+ */
+function SectionHeader({
+  eyebrow,
+  title,
+  support,
+  align = 'left',
+  className = '',
+}: {
+  eyebrow: string
+  title: string
+  support?: React.ReactNode
+  align?: 'left' | 'center'
+  className?: string
+}) {
+  return (
+    <Reveal
+      className={`flex max-w-2xl flex-col gap-3 ${align === 'center' ? 'items-center text-center' : ''} ${className}`}
+    >
+      <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">{eyebrow}</p>
+      <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        {title}
+      </h2>
+      {support && <p className="text-body text-pretty">{support}</p>}
+    </Reveal>
+  )
+}
 
 export default async function LandingPage() {
   const [categories, featured] = await Promise.all([getCategoryTree(), getFeaturedProfessionals(6)])
@@ -33,19 +95,8 @@ export default async function LandingPage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden">
-        {/* Subtle, monochrome depth — a faint dot grid that fades out toward the
-            content. No colour: the type carries the page, the texture only keeps
-            the field from reading as flat white. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_35%,black,transparent)] opacity-[0.4]"
-          style={{
-            backgroundImage:
-              'radial-gradient(color-mix(in oklch, var(--muted) 22%, transparent) 1px, transparent 1px)',
-            backgroundSize: '22px 22px',
-          }}
-        />
-        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-20 text-center sm:px-6 sm:pt-32 sm:pb-28">
+        <DotGrid />
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-16 text-center sm:px-6 sm:pt-32 sm:pb-24">
           <span className="border-border bg-card text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
             <span className="bg-success size-1.5 rounded-full" aria-hidden="true" />
             Verified professionals across Trinidad &amp; Tobago
@@ -57,12 +108,28 @@ export default async function LandingPage() {
 
           <p className="text-body max-w-xl text-lg text-pretty">
             Describe your project, compare verified professionals, and reach them straight on
-            WhatsApp. Free for customers — always.
+            WhatsApp.
           </p>
 
           <div className="w-full max-w-2xl">
             <HeroSearch />
           </div>
+
+          {/* Trust, before the first scroll: the three promises in miniature.
+              Each is expanded lower down — this is the page's thesis stated up
+              front, not decoration. */}
+          <ul className="text-muted flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+            {[
+              { icon: ShieldCheck, label: 'Identity checked' },
+              { icon: Star, label: 'Every review moderated' },
+              { icon: MessageCircle, label: 'Free for customers — always' },
+            ].map((item) => (
+              <li key={item.label} className="inline-flex items-center gap-1.5">
+                <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                {item.label}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -72,6 +139,9 @@ export default async function LandingPage() {
           <ContainerScroll
             titleComponent={
               <div className="flex flex-col items-center gap-3 pb-2">
+                <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
+                  The marketplace
+                </p>
                 <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
                   The whole marketplace, in your pocket.
                 </h2>
@@ -105,15 +175,48 @@ export default async function LandingPage() {
         </section>
       )}
 
+      {/* ── Problem → solution ── */}
+      <section className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
+        <SectionHeader
+          eyebrow="Why TradeLynq"
+          title="Finding someone good shouldn't come down to luck."
+          support="Word of mouth is how it has always worked — until you need someone your circle doesn't know. Here is exactly what changes."
+          className="mb-10"
+        />
+        <ProblemSolution
+          problemLabel="The usual way"
+          solutionLabel="On TradeLynq"
+          pairs={[
+            {
+              problem: 'A number forwarded through three group chats, with no way to check it.',
+              solution: 'Real profiles, identity checked against a National ID or Passport.',
+            },
+            {
+              problem: "One friend's opinion is the entire reference check.",
+              solution: 'Moderated reviews, each one tied to a job that actually happened.',
+            },
+            {
+              problem: 'Call, wait, hear nothing, start the search over.',
+              solution: 'Compare professionals side by side and message them on WhatsApp.',
+            },
+            {
+              problem: 'Platforms that sit in the middle and take a cut.',
+              solution: 'Direct contact, no middleman — and customers never pay a booking fee.',
+            },
+          ]}
+        />
+      </section>
+
       {/* ── How it works ── */}
       <section className="border-border bg-card-subtle/60 border-y">
-        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-          <Reveal className="mb-10 max-w-2xl">
-            <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-              From “I need someone” to “sorted” — in three steps.
-            </h2>
-          </Reveal>
-          <div className="grid gap-8 sm:grid-cols-3">
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+          <SectionHeader
+            eyebrow="How it works"
+            title="From “I need someone” to “sorted” — in three steps."
+            support="Browse without an account. Reach out only when you're ready."
+            className="mb-12"
+          />
+          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-3">
             {[
               {
                 icon: PencilLine,
@@ -134,14 +237,14 @@ export default async function LandingPage() {
                 body: 'Reach the professional straight on WhatsApp, phone, or email — no platform middleman, no booking fees.',
               },
             ].map((item, index) => (
-              <Reveal key={item.step} delay={index * 90} className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-accent-ink/25 font-display text-4xl font-semibold tabular-nums">
-                    {item.step}
-                  </span>
-                  <span className="bg-accent-soft text-accent-ink flex size-9 items-center justify-center rounded-full">
-                    <item.icon className="size-4.5" aria-hidden="true" />
-                  </span>
+              <Reveal
+                key={item.step}
+                delay={index * 90}
+                className="border-border flex flex-col gap-3 border-t pt-6"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-muted font-mono text-sm tabular-nums">{item.step}</span>
+                  <item.icon className="text-accent-ink size-5" aria-hidden="true" />
                 </div>
                 <h3 className="text-foreground text-lg font-medium">{item.title}</h3>
                 <p className="text-body text-sm leading-relaxed">{item.body}</p>
@@ -153,11 +256,20 @@ export default async function LandingPage() {
 
       {/* ── Categories ── */}
       {categories.length > 0 && (
-        <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-          <Reveal className="mb-8 flex items-end justify-between">
-            <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-              What people are booking
-            </h2>
+        <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+          <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex max-w-2xl flex-col gap-3">
+              <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
+                Categories
+              </p>
+              <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+                What people are booking
+              </h2>
+              <p className="text-body">
+                <span className="text-foreground font-mono tabular-nums">{categories.length}</span>{' '}
+                categories, from beauty to building work.
+              </p>
+            </div>
             <Link
               href="/search"
               className="text-accent-ink group inline-flex items-center gap-1 text-sm font-medium hover:underline"
@@ -181,7 +293,14 @@ export default async function LandingPage() {
                     padding="compact"
                     className="h-full transition-transform duration-200 group-hover:-translate-y-0.5"
                   >
-                    <span className="text-foreground font-medium">{node.parent.name}</span>
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="text-foreground font-medium">{node.parent.name}</span>
+                      {node.children.length > 0 && (
+                        <span className="text-muted font-mono text-xs tabular-nums">
+                          {node.children.length}
+                        </span>
+                      )}
+                    </span>
                     {node.children.length > 0 && (
                       <span className="text-muted mt-1 block text-xs">
                         {node.children
@@ -202,11 +321,17 @@ export default async function LandingPage() {
       {/* ── Featured supply (real only) ── */}
       {featured.length > 0 && (
         <section className="border-border border-t">
-          <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
-            <Reveal className="mb-8 flex items-end justify-between">
-              <h2 className="text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-                Highly rated right now
-              </h2>
+          <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+            <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
+              <div className="flex max-w-2xl flex-col gap-3">
+                <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
+                  Professionals
+                </p>
+                <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Highly rated right now
+                </h2>
+                <p className="text-body">Ranked by rating and reviews — never by who pays.</p>
+              </div>
               <Link
                 href="/search"
                 className="text-accent-ink group inline-flex items-center gap-1 text-sm font-medium hover:underline"
@@ -229,38 +354,60 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* ── Trust ── */}
+      {/* ── The three promises ── */}
       <section className="border-border bg-card-subtle/60 border-y">
-        <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-20 sm:grid-cols-3 sm:px-6">
-          {[
-            {
-              icon: ShieldCheck,
-              title: 'Identity verified',
-              body: 'Professionals upload a National ID or Passport, reviewed by our team. A green badge means we checked something real — never a paid ranking.',
-            },
-            {
-              icon: Star,
-              title: 'Moderated reviews',
-              body: 'Every review is checked before it goes live and linked to a real job. No fake testimonials, ever.',
-            },
-            {
-              icon: MessageCircle,
-              title: 'No middleman, no fees',
-              body: 'You reach professionals directly on WhatsApp. We never sit between you and the work, and we never charge a booking fee.',
-            },
-          ].map((item, index) => (
-            <Reveal key={item.title} delay={index * 90} className="flex flex-col gap-3">
-              <item.icon className="text-accent-ink size-7" aria-hidden="true" />
-              <h3 className="text-foreground text-lg font-medium">{item.title}</h3>
-              <p className="text-body text-sm leading-relaxed">{item.body}</p>
-            </Reveal>
-          ))}
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+          <SectionHeader
+            eyebrow="The promises"
+            title="Trust is the product — so it's built in, not bolted on."
+            support="No paid rankings and no invented ratings. A badge here means we checked something real."
+            className="mb-12"
+          />
+          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-3">
+            {[
+              {
+                icon: ShieldCheck,
+                step: '01',
+                title: 'Identity verified',
+                body: 'Professionals upload a National ID or Passport, reviewed by our team. A green badge means we checked something real — never a paid ranking.',
+              },
+              {
+                icon: Star,
+                step: '02',
+                title: 'Moderated reviews',
+                body: 'Every review is checked before it goes live and linked to a real job. No fake testimonials, ever.',
+              },
+              {
+                icon: MessageCircle,
+                step: '03',
+                title: 'No middleman, no fees',
+                body: 'You reach professionals directly on WhatsApp. We never sit between you and the work, and we never charge a booking fee.',
+              },
+            ].map((item, index) => (
+              <Reveal
+                key={item.title}
+                delay={index * 90}
+                className="border-border flex flex-col gap-3 border-t pt-6"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-muted font-mono text-sm tabular-nums">{item.step}</span>
+                  <item.icon className="text-accent-ink size-5" aria-hidden="true" />
+                </div>
+                <h3 className="text-foreground text-lg font-medium">{item.title}</h3>
+                <p className="text-body text-sm leading-relaxed">{item.body}</p>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Pro CTA ── */}
+      {/* ── Professional CTA ── */}
       <section className="relative isolate overflow-hidden">
-        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6">
+        <DotGrid />
+        <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6 sm:py-28">
+          <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
+            For professionals
+          </p>
           <h2 className="font-display text-foreground text-[clamp(2rem,5vw,3.25rem)] leading-tight font-semibold tracking-[-0.02em] text-balance">
             Run your trade like a business.
           </h2>
