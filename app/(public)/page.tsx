@@ -38,7 +38,6 @@ import { PhoneFlow } from '@/components/shared/PhoneFlow'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
-import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { HeroSearch } from './HeroSearch'
 
 /**
@@ -142,31 +141,50 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Product showcase (scroll-driven 3D reveal) ── */}
+      {/* ── Product showcase — a two-column split: the story on the left, the
+          real journey playing on a phone on the right. No scroll gimmick. ── */}
       {featured.length > 0 && (
-        <section className="relative -mt-8 overflow-hidden sm:-mt-4">
-          <ContainerScroll
-            titleComponent={
-              <div className="flex flex-col items-center gap-3 pb-2">
-                <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
-                  The marketplace
-                </p>
-                <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
-                  The whole marketplace, in your pocket.
-                </h2>
-                <p className="text-muted max-w-md text-sm">
-                  Search, compare, and reach real professionals — no account needed to look.
-                </p>
+        <section className="border-border bg-card-subtle/50 border-y">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:gap-8">
+            <Reveal className="flex flex-col gap-5">
+              <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
+                The whole journey
+              </p>
+              <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                From a problem to a plumber — in four taps.
+              </h2>
+              <p className="text-body text-pretty">
+                Type what you need, compare verified professionals, open a storefront, and pick up
+                the conversation on WhatsApp. No account to browse, no middleman, no booking fee.
+              </p>
+              <ol className="mt-2 flex flex-col gap-3">
+                {[
+                  { n: '01', label: 'Search in plain words' },
+                  { n: '02', label: 'Compare real reviews and prices' },
+                  { n: '03', label: 'Open a verified storefront' },
+                  { n: '04', label: 'Chat directly on WhatsApp' },
+                ].map((step) => (
+                  <li key={step.n} className="flex items-center gap-3">
+                    <span className="text-brand-cyan-ink font-mono text-sm font-medium tabular-nums">
+                      {step.n}
+                    </span>
+                    <span className="text-foreground text-sm">{step.label}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-2">
+                <Button asChild>
+                  <Link href="/search">Try it now</Link>
+                </Button>
               </div>
-            }
-          >
-            {/* The journey itself, playing on a phone: search → results →
-                storefront → WhatsApp. Real seed data inside a CSS phone — not a
-                screenshot, not a video file, and it re-themes with the site. */}
-            <div className="relative h-full py-4 sm:py-6">
+            </Reveal>
+
+            {/* The real journey, playing on a phone — real seed data, tokens
+                throughout, so it re-themes with the site. */}
+            <div className="relative min-h-[34rem]">
               <PhoneFlow professional={featured[0]!} />
             </div>
-          </ContainerScroll>
+          </div>
         </section>
       )}
 

@@ -1,4 +1,8 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
 
 /* ============================================================================
    TradeLynq V2 — the semantic token layer (playbook S058)
@@ -66,6 +70,32 @@
   --aurora-3: oklch(0.93 0.015 250);
 
   --desktop-sidebar-offset: 340px;
+
+  /* ── shadcn/registry compatibility — ALIASED onto our system so any component
+     added via the shadcn CLI renders on-brand automatically. Never restyle
+     these directly; change the semantic tokens above instead. */
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--card-subtle);
+  --secondary-foreground: var(--body);
+  --muted-foreground: var(--muted);
+  --input: var(--border);
+  --radius: 0.625rem;
+  --chart-1: var(--brand-cyan);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--brand-amber);
+  --chart-5: var(--destructive);
+  --sidebar-foreground: var(--accent-foreground);
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--foreground);
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 /* ── Dark: redesigned, not inverted (R2) ────────────────────────────────── */
@@ -105,6 +135,29 @@
   --aurora-1: oklch(0.45 0.07 215);
   --aurora-2: oklch(0.4 0.05 250);
   --aurora-3: oklch(0.38 0.03 230);
+
+  /* shadcn/registry compatibility — aliased, see the light block. */
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--card-subtle);
+  --secondary-foreground: var(--body);
+  --muted-foreground: var(--muted);
+  --input: var(--border);
+  --chart-1: var(--brand-cyan);
+  --chart-2: var(--info);
+  --chart-3: var(--success);
+  --chart-4: var(--brand-amber);
+  --chart-5: var(--destructive);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--brand-cyan);
+  --sidebar-primary-foreground: var(--background);
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--accent-ink);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 /* ── Tailwind mapping ───────────────────────────────────────────────────── */
@@ -185,6 +238,35 @@
   --ease-enter: cubic-bezier(0, 0, 0.2, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
+  /* --font-heading removed: headings use --font-display (Bricolage). */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-input: var(--input);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
@@ -192,6 +274,7 @@
 @layer base {
   * {
     border-color: var(--border);
+    @apply border-border outline-ring/50;
   }
 
   body {
@@ -199,6 +282,7 @@
     color: var(--body);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
 
   h1,
@@ -247,6 +331,9 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+  html {
+    @apply font-sans;
   }
 }
 
