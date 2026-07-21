@@ -46,7 +46,16 @@
   /* WhatsApp brand green — a recognition signal, outside the status vocabulary. */
   --whatsapp: #25d366;
 
-  /* Focus. One of exactly three places cyan survives (ring, logo, M13). */
+  /* V1 brand accents, carried forward by Gregg's direction (20 Jul): cyan and
+     amber return as ACCENT colours for infographic moments — tickers, flow
+     lines, coloured proof icons — not as surface colours. `-ink` variants are
+     the AA-safe text versions (V1's own contrast-checked values). */
+  --brand-cyan: hsl(187 100% 42%);
+  --brand-cyan-ink: hsl(187 100% 27%);
+  --brand-amber: hsl(38 92% 50%);
+  --brand-amber-ink: hsl(32 95% 38%);
+
+  /* Focus ring — the V1 cyan. */
   --ring: #00bdd6;
 
   /* Aurora — the living hero, recoloured to the R2 palette: a cool cyan/slate
@@ -85,6 +94,13 @@
 
   --ring: #00a8bf;
 
+  /* V1 accents on the dark ink: lifted lightness so they carry, ink variants
+     bright enough to read as text on dark surfaces. */
+  --brand-cyan: hsl(187 90% 48%);
+  --brand-cyan-ink: hsl(187 85% 62%);
+  --brand-amber: hsl(38 92% 55%);
+  --brand-amber-ink: hsl(42 95% 62%);
+
   /* Aurora on the dark ink: deep cyan/slate glow, restrained. */
   --aurora-1: oklch(0.45 0.07 215);
   --aurora-2: oklch(0.4 0.05 250);
@@ -114,6 +130,10 @@
   --color-destructive: var(--destructive);
   --color-info: var(--info);
   --color-whatsapp: var(--whatsapp);
+  --color-brand-cyan: var(--brand-cyan);
+  --color-brand-cyan-ink: var(--brand-cyan-ink);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-amber-ink: var(--brand-amber-ink);
 
   --color-ring: var(--ring);
 

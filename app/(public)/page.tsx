@@ -32,6 +32,9 @@ import {
 import { getCategoryTree, getFeaturedProfessionals } from '@/lib/marketplace/queries'
 import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
 import { ProblemSolution } from '@/components/shared/ProblemSolution'
+import { FlowLine } from '@/components/shared/FlowLine'
+import { NumberTicker } from '@/components/shared/NumberTicker'
+import { PhoneFlow } from '@/components/shared/PhoneFlow'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
@@ -120,12 +123,18 @@ export default async function LandingPage() {
               front, not decoration. */}
           <ul className="text-muted flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
             {[
-              { icon: ShieldCheck, label: 'Identity checked' },
-              { icon: Star, label: 'Every review moderated' },
-              { icon: MessageCircle, label: 'Free for customers — always' },
+              // V1's trust-bar colour logic, carried forward: verification is
+              // green, reviews are amber, WhatsApp is its own brand green.
+              { icon: ShieldCheck, label: 'Identity checked', colour: 'text-success' },
+              { icon: Star, label: 'Every review moderated', colour: 'text-brand-amber' },
+              {
+                icon: MessageCircle,
+                label: 'Free for customers — always',
+                colour: 'text-whatsapp',
+              },
             ].map((item) => (
               <li key={item.label} className="inline-flex items-center gap-1.5">
-                <item.icon className="size-4 shrink-0" aria-hidden="true" />
+                <item.icon className={`size-4 shrink-0 ${item.colour}`} aria-hidden="true" />
                 {item.label}
               </li>
             ))}
@@ -151,25 +160,11 @@ export default async function LandingPage() {
               </div>
             }
           >
-            {/* A browser frame around the real product — not a stock screenshot. */}
-            <div className="flex h-full flex-col">
-              <div className="border-border/60 bg-card flex items-center gap-2 border-b px-4 py-2.5">
-                <span className="flex gap-1.5" aria-hidden="true">
-                  <span className="bg-muted/40 size-2.5 rounded-full" />
-                  <span className="bg-muted/40 size-2.5 rounded-full" />
-                  <span className="bg-muted/40 size-2.5 rounded-full" />
-                </span>
-                <span className="border-border bg-card-subtle text-muted ml-2 flex-1 truncate rounded-full border px-3 py-1 text-xs">
-                  tradelynq.tt/search
-                </span>
-              </div>
-              <div className="flex-1 overflow-hidden p-4 sm:p-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {featured.slice(0, 3).map((pro, index) => (
-                    <ProfessionalCard key={pro.id} data={pro} source="search" position={index} />
-                  ))}
-                </div>
-              </div>
+            {/* The journey itself, playing on a phone: search → results →
+                storefront → WhatsApp. Real seed data inside a CSS phone — not a
+                screenshot, not a video file, and it re-themes with the site. */}
+            <div className="relative h-full py-4 sm:py-6">
+              <PhoneFlow professional={featured[0]!} />
             </div>
           </ContainerScroll>
         </section>
@@ -216,6 +211,9 @@ export default async function LandingPage() {
             support="Browse without an account. Reach out only when you're ready."
             className="mb-12"
           />
+          {/* The journey line: draws across the three steps as the section
+              arrives — V1 cyan doing what it does best, signalling progress. */}
+          <FlowLine className="-mb-px hidden sm:block" />
           <div className="grid gap-x-8 gap-y-10 sm:grid-cols-3">
             {[
               {
@@ -243,7 +241,9 @@ export default async function LandingPage() {
                 className="border-border flex flex-col gap-3 border-t pt-6"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-muted font-mono text-sm tabular-nums">{item.step}</span>
+                  <span className="text-brand-cyan-ink font-mono text-sm font-medium tabular-nums">
+                    {item.step}
+                  </span>
                   <item.icon className="text-accent-ink size-5" aria-hidden="true" />
                 </div>
                 <h3 className="text-foreground text-lg font-medium">{item.title}</h3>
@@ -266,8 +266,12 @@ export default async function LandingPage() {
                 What people are booking
               </h2>
               <p className="text-body">
-                <span className="text-foreground font-mono tabular-nums">{categories.length}</span>{' '}
-                categories, from beauty to building work.
+                <NumberTicker value={categories.length} className="text-foreground" /> categories ·{' '}
+                <NumberTicker
+                  value={categories.reduce((total, node) => total + node.children.length, 0)}
+                  className="text-foreground"
+                />{' '}
+                specialities, from beauty to building work.
               </p>
             </div>
             <Link
@@ -365,21 +369,27 @@ export default async function LandingPage() {
           />
           <div className="grid gap-x-8 gap-y-10 sm:grid-cols-3">
             {[
+              // The same V1 colour logic as the hero strip, expanded: each
+              // promise carries its own accent, so the section reads as three
+              // distinct guarantees rather than three grey paragraphs.
               {
                 icon: ShieldCheck,
                 step: '01',
+                colour: 'text-success',
                 title: 'Identity verified',
                 body: 'Professionals upload a National ID or Passport, reviewed by our team. A green badge means we checked something real — never a paid ranking.',
               },
               {
                 icon: Star,
                 step: '02',
+                colour: 'text-brand-amber',
                 title: 'Moderated reviews',
                 body: 'Every review is checked before it goes live and linked to a real job. No fake testimonials, ever.',
               },
               {
                 icon: MessageCircle,
                 step: '03',
+                colour: 'text-whatsapp',
                 title: 'No middleman, no fees',
                 body: 'You reach professionals directly on WhatsApp. We never sit between you and the work, and we never charge a booking fee.',
               },
@@ -391,7 +401,7 @@ export default async function LandingPage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-muted font-mono text-sm tabular-nums">{item.step}</span>
-                  <item.icon className="text-accent-ink size-5" aria-hidden="true" />
+                  <item.icon className={`size-5 ${item.colour}`} aria-hidden="true" />
                 </div>
                 <h3 className="text-foreground text-lg font-medium">{item.title}</h3>
                 <p className="text-body text-sm leading-relaxed">{item.body}</p>
