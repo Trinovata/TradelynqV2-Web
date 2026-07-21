@@ -2,10 +2,11 @@
  * Landing page (playbook S077).
  *
  * R2 "Ink & Paper" palette, real display typography (Bricolage Grotesque), and a
- * living cyan/slate aurora behind the hero — the signature moment. Server-
- * rendered so the first paint is content; choreographed with scroll reveals so
- * each section arrives as you reach it. Real supply only — the proof strip
- * renders nothing when there are no active professionals.
+ * clean editorial hero — the type carries it, over a faint monochrome dot grid.
+ * The signature moment is the scroll-driven 3D showcase: the real product,
+ * browser-framed, rotating into view. Server-rendered so the first paint is
+ * content; choreographed with scroll reveals. Real supply only — the showcase
+ * and proof strips render nothing when there are no active professionals.
  */
 import Link from 'next/link'
 import {
@@ -21,8 +22,8 @@ import { getCategoryTree, getFeaturedProfessionals } from '@/lib/marketplace/que
 import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Aurora } from '@/components/shared/Aurora'
 import { Reveal } from '@/components/shared/Reveal'
+import { ContainerScroll } from '@/components/ui/container-scroll-animation'
 import { HeroSearch } from './HeroSearch'
 
 export default async function LandingPage() {
@@ -32,14 +33,25 @@ export default async function LandingPage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden">
-        <Aurora />
+        {/* Subtle, monochrome depth — a faint dot grid that fades out toward the
+            content. No colour: the type carries the page, the texture only keeps
+            the field from reading as flat white. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_35%,black,transparent)] opacity-[0.4]"
+          style={{
+            backgroundImage:
+              'radial-gradient(color-mix(in oklch, var(--muted) 22%, transparent) 1px, transparent 1px)',
+            backgroundSize: '22px 22px',
+          }}
+        />
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-20 text-center sm:px-6 sm:pt-32 sm:pb-28">
-          <span className="border-border bg-card/70 text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium backdrop-blur">
+          <span className="border-border bg-card text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
             <span className="bg-success size-1.5 rounded-full" aria-hidden="true" />
             Verified professionals across Trinidad &amp; Tobago
           </span>
 
-          <h1 className="font-display text-foreground max-w-3xl text-[clamp(2.6rem,7vw,4.75rem)] leading-[0.98] font-semibold tracking-[-0.02em] text-balance">
+          <h1 className="font-display text-foreground max-w-3xl text-[clamp(2.6rem,7.5vw,5rem)] leading-[0.96] font-semibold tracking-[-0.025em] text-balance">
             Whatever you need done, someone here does it well.
           </h1>
 
@@ -53,6 +65,45 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Product showcase (scroll-driven 3D reveal) ── */}
+      {featured.length > 0 && (
+        <section className="relative -mt-8 overflow-hidden sm:-mt-4">
+          <ContainerScroll
+            titleComponent={
+              <div className="flex flex-col items-center gap-3 pb-2">
+                <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+                  The whole marketplace, in your pocket.
+                </h2>
+                <p className="text-muted max-w-md text-sm">
+                  Search, compare, and reach real professionals — no account needed to look.
+                </p>
+              </div>
+            }
+          >
+            {/* A browser frame around the real product — not a stock screenshot. */}
+            <div className="flex h-full flex-col">
+              <div className="border-border/60 bg-card flex items-center gap-2 border-b px-4 py-2.5">
+                <span className="flex gap-1.5" aria-hidden="true">
+                  <span className="bg-muted/40 size-2.5 rounded-full" />
+                  <span className="bg-muted/40 size-2.5 rounded-full" />
+                  <span className="bg-muted/40 size-2.5 rounded-full" />
+                </span>
+                <span className="border-border bg-card-subtle text-muted ml-2 flex-1 truncate rounded-full border px-3 py-1 text-xs">
+                  tradelynq.tt/search
+                </span>
+              </div>
+              <div className="flex-1 overflow-hidden p-4 sm:p-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {featured.slice(0, 3).map((pro, index) => (
+                    <ProfessionalCard key={pro.id} data={pro} source="search" position={index} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </ContainerScroll>
+        </section>
+      )}
 
       {/* ── How it works ── */}
       <section className="border-border bg-card-subtle/60 border-y">
@@ -209,7 +260,6 @@ export default async function LandingPage() {
 
       {/* ── Pro CTA ── */}
       <section className="relative isolate overflow-hidden">
-        <Aurora className="opacity-70" />
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6">
           <h2 className="font-display text-foreground text-[clamp(2rem,5vw,3.25rem)] leading-tight font-semibold tracking-[-0.02em] text-balance">
             Run your trade like a business.
