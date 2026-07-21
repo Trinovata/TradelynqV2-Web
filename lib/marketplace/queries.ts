@@ -15,18 +15,22 @@ import {
 } from '@/lib/marketplace/professional-card'
 
 /** Columns needed to build a card. Contact fields are deliberately absent. */
-const CARD_COLUMNS =
+export const CARD_COLUMNS =
   'id, user_id, slug, business_name, tagline, profile_photo_url, category_id, ' +
   'availability, business_type, service_areas, services, verification_status, ' +
   'national_id_verified, has_insurance, listing_status, average_rating, review_count'
 
-type CardRow = Record<string, unknown>
+export type CardRow = Record<string, unknown>
 
 /**
  * Resolves the category name and the owner's subtype for a batch of rows in two
  * lookups rather than N — a card list of 20 must not fan out into 40 queries.
+ *
+ * Exported so the search action and the read helpers shape cards identically;
+ * a divergence here would make the same professional look different on the
+ * search page than on the landing.
  */
-async function decorate(
+export async function decorateCards(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rows: CardRow[]
 ): Promise<ProfessionalCardData[]> {
@@ -75,7 +79,7 @@ export async function getFeaturedProfessionals(limit = 12): Promise<Professional
     .limit(limit)
 
   if (error || !data) return []
-  return decorate(supabase, data as unknown as CardRow[])
+  return decorateCards(supabase, data as unknown as CardRow[])
 }
 
 export type CategoryTreeNode = {
