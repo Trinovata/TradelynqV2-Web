@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { ErrorState } from '@/components/ui/States'
 import { formatTTD, formatDate, formatRelativeTime } from '@/lib/utils/format'
 import type { Enums } from '@/types/database'
+import { EnquiryActions } from './EnquiryActions'
 
 export const metadata: Metadata = {
   title: 'Enquiry',
@@ -96,10 +97,14 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
         </dl>
       </Card>
 
+      <div className="mb-4">
+        <EnquiryActions enquiryId={enquiry.id} status={enquiry.status} firstName={name} />
+      </div>
+
       <EnquiryOutcome enquiry={enquiry} />
 
       <p className="text-muted mt-6 text-xs">
-        Replying, accepting and declining arrive in the next update.
+        Sending quotes and replying on WhatsApp arrive with the Quotes tool.
       </p>
     </div>
   )

@@ -4,6 +4,7 @@ import { loginRedirect } from '@/lib/routes'
 import { WorkspaceSidebar } from '@/components/professional/WorkspaceSidebar'
 import { WorkspaceTabBar } from '@/components/professional/WorkspaceTabBar'
 import { WorkspaceTopBar } from '@/components/professional/WorkspaceTopBar'
+import { Toaster } from '@/components/ui/Toast'
 
 /**
  * The professional workspace shell (playbook S105, spec v2/05 §5.0).
@@ -37,6 +38,7 @@ export default async function ProfessionalLayout({ children }: { children: React
       </div>
 
       <WorkspaceTabBar tier={ctx.tier} />
+      <Toaster />
     </div>
   )
 }
