@@ -25,9 +25,28 @@ const MENU_LINKS = [
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const headerRef = React.useRef<HTMLElement>(null)
+
+  // Scroll-aware chrome: quiet and borderless at the very top of the page,
+  // gaining its hairline + soft shadow only once content actually scrolls
+  // beneath it. Driven through the ref (a data attribute read by CSS), not
+  // React state — zero re-renders per scroll frame.
+  React.useEffect(() => {
+    const node = headerRef.current
+    if (!node) return
+    const onScroll = () => {
+      node.dataset.scrolled = window.scrollY > 8 ? 'true' : 'false'
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
-    <header className="border-border bg-background/90 sticky top-0 z-40 border-b backdrop-blur">
+    <header
+      ref={headerRef}
+      className="bg-background/90 data-[scrolled=true]:border-border sticky top-0 z-40 border-b border-transparent backdrop-blur transition-[border-color,box-shadow] duration-300 data-[scrolled=true]:shadow-[0_1px_12px_-8px_rgb(16_22_31/0.18)]"
+    >
       <nav
         aria-label="Primary"
         className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:gap-4 sm:px-6"

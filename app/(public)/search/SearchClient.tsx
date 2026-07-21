@@ -106,8 +106,10 @@ export function SearchClient({ initialResult, query, category, area, sort, categ
         </Button>
       </form>
 
-      {/* ── Filters ── */}
-      <div className="mb-6 flex flex-wrap items-center gap-2">
+      {/* ── Filters ──
+          Sticky beneath the navbar from sm up, so refining a search never means
+          scrolling back to the top — the controls travel with the results. */}
+      <div className="bg-background/95 mb-6 flex flex-wrap items-center gap-2 py-2 backdrop-blur sm:sticky sm:top-16 sm:z-30">
         <span className="text-muted inline-flex items-center gap-1.5 text-sm">
           <SlidersHorizontal className="size-4" aria-hidden="true" />
           Filter
@@ -182,7 +184,11 @@ export function SearchClient({ initialResult, query, category, area, sort, categ
               className="motion-safe:animate-[tlEnter_360ms_cubic-bezier(0,0,0.2,1)_both]"
               style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
             >
-              <ProfessionalCard data={pro} source="search" position={(page - 1) * pageSize + index} />
+              <ProfessionalCard
+                data={pro}
+                source="search"
+                position={(page - 1) * pageSize + index}
+              />
             </div>
           ))}
         </div>
