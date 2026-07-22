@@ -63,7 +63,8 @@ export default async function CustomerHomePage() {
         <SignpostCard
           icon={MessageCircle}
           title="Your enquiries"
-          body="Once you reach out to a professional, your conversations will appear here."
+          body="Track the professionals you've reached and see their replies."
+          href="/home/enquiries"
         />
         <SignpostCard
           icon={Bookmark}
@@ -84,16 +85,26 @@ function SignpostCard({
   icon: Icon,
   title,
   body,
+  href,
 }: {
   icon: typeof Search
   title: string
   body: string
+  href?: string
 }) {
-  return (
-    <div className="border-border bg-card rounded-[--radius-card] border p-5">
+  const inner = (
+    <>
       <Icon className="text-muted size-5" aria-hidden="true" />
       <h3 className="text-foreground mt-3 font-medium">{title}</h3>
       <p className="text-muted mt-1 text-sm text-pretty">{body}</p>
-    </div>
+    </>
+  )
+  const className = 'border-border bg-card block rounded-[--radius-card] border p-5'
+  return href ? (
+    <Link href={href} className={`${className} hover:border-accent/30 transition-colors`}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={className}>{inner}</div>
   )
 }

@@ -71,3 +71,48 @@ export async function getEnquiryInbox(
 
   return { rows: (data ?? []) as EnquiryRow[], error: null }
 }
+
+/** A customer's own enquiry, as their portal shows it — with the professional's
+ *  public name and slug so they can see who they reached and follow the reply. */
+export type CustomerEnquiryRow = {
+  id: string
+  status: Enums<'enquiry_status'>
+  description: string
+  preferred_date: string | null
+  created_at: string
+  declined_reason: string | null
+  professional: { business_name: string; slug: string | null } | null
+}
+
+/**
+ * The calling customer's own enquiries, newest first. Straightforward RLS read —
+ * `job_enquiries` lets a customer see rows where `customer_id = auth.uid()`, and
+ * the professional's public name/slug embed (visible for active listings) tells
+ * them who they reached.
+ */
+export async function getCustomerEnquiries(
+  supabase: SupabaseClient<Database>
+): Promise<{ rows: CustomerEnquiryRow[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from('job_enquiries')
+    .select(
+      'id, status, description, preferred_date, created_at, declined_reason, professional_profiles(business_name, slug)'
+    )
+    .order('created_at', { ascending: false })
+
+  if (error) return { rows: [], error: error.message }
+
+  const rows = (data ?? []).map((r) => {
+    const pro = r.professional_profiles as { business_name: string; slug: string | null } | null
+    return {
+      id: r.id,
+      status: r.status,
+      description: r.description,
+      preferred_date: r.preferred_date,
+      created_at: r.created_at,
+      declined_reason: r.declined_reason,
+      professional: pro,
+    }
+  })
+  return { rows, error: null }
+}
