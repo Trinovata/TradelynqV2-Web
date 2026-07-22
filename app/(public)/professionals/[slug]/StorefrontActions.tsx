@@ -11,30 +11,44 @@
  * The reveal gate (S083) is the real mechanism: a signed-out visitor who taps
  * "Show contact" will be walked through sign-in → legal acceptance → the
  * two-free-contacts gate, and only then does the server hand over the number.
- * Until that flow lands, this renders the CTA that will trigger it and is honest
- * about what happens next — never a disabled dead end, never a fake number.
+ * Until that flow lands, the CTA is honest about what happens next and never a
+ * fake number:
+ *   • Signed-out visitor  → sign in, the honest first step of the gate; they
+ *     return to this storefront afterwards via the `next` param.
+ *   • Signed-in user      → the gate is not built, so sending them to /login is
+ *     a redirect loop (that page sees them authenticated and bounces them back).
+ *     They get an explicit "coming soon" state instead — never a silent no-op.
+ *
+ * Auth state arrives as the `isSignedIn` prop from the server page; this
+ * component never fetches the session itself.
  */
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageCircle, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { formatTTD } from '@/lib/utils/format'
+import { loginRedirect } from '@/lib/routes'
 
 type Props = {
   name: string
   category: string | null
   fromPrice: number | null
+  isSignedIn: boolean
 }
 
-export function StorefrontActions({ name, category, fromPrice }: Props) {
+export function StorefrontActions({ name, category, fromPrice, isSignedIn }: Props) {
   const router = useRouter()
 
-  // The reveal gate is not built yet (S083). Sending the visitor to sign in is
-  // the honest first step of that flow — the gate resumes there — rather than a
-  // greyed-out button that pretends the feature is coming later.
-  const reveal = React.useCallback(() => {
-    const next = typeof window !== 'undefined' ? window.location.pathname : '/'
-    router.push(`/login?next=${encodeURIComponent(next)}`)
+  // Who the visitor is trying to reach, in a natural phrase.
+  const target = category ? `this ${category.toLowerCase()}` : name
+
+  // Signed-out only: sign-in is the honest first step of the reveal gate. The
+  // `next` param brings them back to this exact storefront afterwards; loginRedirect
+  // keeps `next` a path, never a full URL, so it can't become an open redirect.
+  const goToLogin = React.useCallback(() => {
+    const { pathname, search } =
+      typeof window !== 'undefined' ? window.location : { pathname: '/', search: '' }
+    router.push(loginRedirect(pathname, search))
   }, [router])
 
   return (
@@ -51,24 +65,42 @@ export function StorefrontActions({ name, category, fromPrice }: Props) {
             </div>
           )}
 
-          <Button fullWidth onClick={reveal}>
-            <MessageCircle className="size-4" aria-hidden="true" />
-            Chat on WhatsApp
-          </Button>
+          {isSignedIn ? (
+            <>
+              {/* The reveal gate is not built yet. An honest notice, not a button
+                  that pretends to work and not a bounce back to /login. */}
+              <div className="border-border bg-card-subtle flex items-start gap-2.5 rounded-[--radius-control] border p-3">
+                <Lock className="text-muted mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                <p className="text-body text-sm">
+                  Contact reveal is coming soon. We&rsquo;re finishing the secure process that
+                  connects you with {target}.
+                </p>
+              </div>
+              <p className="text-muted text-center text-xs">
+                Your first two contacts will be free once it&rsquo;s live.
+              </p>
+            </>
+          ) : (
+            <>
+              <Button fullWidth onClick={goToLogin}>
+                <MessageCircle className="size-4" aria-hidden="true" />
+                Chat on WhatsApp
+              </Button>
 
-          <button
-            type="button"
-            onClick={reveal}
-            className="text-muted hover:text-foreground focus-visible:outline-ring inline-flex items-center justify-center gap-1.5 text-sm transition-[color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <Lock className="size-3.5" aria-hidden="true" />
-            Show contact details
-          </button>
+              <button
+                type="button"
+                onClick={goToLogin}
+                className="text-muted hover:text-foreground focus-visible:outline-ring inline-flex items-center justify-center gap-1.5 text-sm transition-[color] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <Lock className="size-3.5" aria-hidden="true" />
+                Show contact details
+              </button>
 
-          <p className="text-muted border-border border-t pt-3 text-center text-xs">
-            Sign in to reach {category ? `this ${category.toLowerCase()}` : name}. Your first two
-            contacts are free.
-          </p>
+              <p className="text-muted border-border border-t pt-3 text-center text-xs">
+                Sign in to reach {target}. Your first two contacts are free.
+              </p>
+            </>
+          )}
         </div>
       </aside>
 
@@ -83,10 +115,18 @@ export function StorefrontActions({ name, category, fromPrice }: Props) {
               </span>
             </div>
           )}
-          <Button fullWidth onClick={reveal}>
-            <MessageCircle className="size-4" aria-hidden="true" />
-            Chat on WhatsApp
-          </Button>
+
+          {isSignedIn ? (
+            <div className="text-body inline-flex flex-1 items-center justify-center gap-2 text-sm">
+              <Lock className="text-muted size-4 shrink-0" aria-hidden="true" />
+              Contact reveal coming soon
+            </div>
+          ) : (
+            <Button fullWidth onClick={goToLogin}>
+              <MessageCircle className="size-4" aria-hidden="true" />
+              Chat on WhatsApp
+            </Button>
+          )}
         </div>
       </div>
     </>

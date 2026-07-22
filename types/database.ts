@@ -3262,6 +3262,13 @@ export type Database = {
           status: Database["public"]["Enums"]["enquiry_status"]
         }[]
       }
+      professional_subtypes: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          professional_subtype: Database["public"]["Enums"]["professional_subtype"]
+          user_id: string
+        }[]
+      }
       record_insurance_referral: {
         Args: {
           client_ip?: string

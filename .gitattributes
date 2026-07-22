@@ -1,0 +1,19 @@
+# Normalise line endings so prettier --check and CI agree regardless of the
+# developer's OS. Text files are stored with LF in the repo and checked out with
+# LF everywhere; without this, Windows checkouts get CRLF and `format:check`
+# (prettier endOfLine: lf) fails on an otherwise-clean tree.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending-normalised.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary

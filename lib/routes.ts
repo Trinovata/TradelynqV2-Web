@@ -27,36 +27,30 @@ export const ROLE_HOME: Record<Role, string> = {
  * role. There are deliberately no overlaps.
  */
 export const ROUTE_NAMESPACES: Record<Role, readonly string[]> = {
-  customer: ['/home', '/enquiries', '/saved', '/jobs', '/invoices', '/kyc'],
+  // DECISION (reconciles the copy-deck vs route-contract conflict the audit
+  // flagged): the professional workspace (playbook S105, built and shipped)
+  // owns the flat paths its sidebar names — /enquiries, /jobs, /invoices, etc.
+  // The customer portal (v2/04, Phase 5, not yet built) therefore does NOT reuse
+  // those top-level paths; its received-work views will nest under /home
+  // (e.g. /home/enquiries, /home/jobs, /home/invoices) so no path is owned twice.
+  customer: ['/home', '/saved', '/kyc'],
   professional: [
     '/dashboard',
     '/onboarding',
-    // The workspace shell (playbook S105) renders the flat paths the copy deck's
-    // sidebar (05 §5) names. FLAG (reconcile in Phase 5): '/enquiries', '/jobs',
-    // and '/invoices' are also listed under `customer` below — the copy deck puts
-    // the professional inbox at '/enquiries' while this contract had reserved
-    // '/enquiries-received'. `namespaceOwner` checks professional before customer,
-    // so professionals win today; the customer portal will need distinct paths
-    // (e.g. nest customer views under '/home') or the professional workspace moves
-    // to a '/work'-style prefix. Not silently resolved — logged here as a D-flag.
     '/enquiries',
-    '/enquiries-received',
     '/quotes',
     '/jobs',
     '/bookings',
     '/invoices',
-    '/work',
     '/clients',
     '/storefront',
     '/portfolio',
     '/offerings',
     '/reviews',
-    '/growth',
     '/analytics',
     '/readiness',
     '/referrals',
     '/subscription',
-    '/tools',
     '/credits',
     '/integrations',
     '/settings',
