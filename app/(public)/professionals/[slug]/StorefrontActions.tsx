@@ -28,16 +28,19 @@ import { MessageCircle, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { formatTTD } from '@/lib/utils/format'
 import { loginRedirect } from '@/lib/routes'
+import { EnquiryForm } from './EnquiryForm'
 
 type Props = {
+  professionalId: string
   name: string
   category: string | null
   fromPrice: number | null
   isSignedIn: boolean
 }
 
-export function StorefrontActions({ name, category, fromPrice, isSignedIn }: Props) {
+export function StorefrontActions({ professionalId, name, category, fromPrice, isSignedIn }: Props) {
   const router = useRouter()
+  const [enquiryOpen, setEnquiryOpen] = React.useState(false)
 
   // Who the visitor is trying to reach, in a natural phrase.
   const target = category ? `this ${category.toLowerCase()}` : name
@@ -67,17 +70,12 @@ export function StorefrontActions({ name, category, fromPrice, isSignedIn }: Pro
 
           {isSignedIn ? (
             <>
-              {/* The reveal gate is not built yet. An honest notice, not a button
-                  that pretends to work and not a bounce back to /login. */}
-              <div className="border-border bg-card-subtle flex items-start gap-2.5 rounded-[--radius-control] border p-3">
-                <Lock className="text-muted mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <p className="text-body text-sm">
-                  Contact reveal is coming soon. We&rsquo;re finishing the secure process that
-                  connects you with {target}.
-                </p>
-              </div>
-              <p className="text-muted text-center text-xs">
-                Your first two contacts will be free once it&rsquo;s live.
+              <Button fullWidth onClick={() => setEnquiryOpen(true)}>
+                <MessageCircle className="size-4" aria-hidden="true" />
+                Send an enquiry
+              </Button>
+              <p className="text-muted border-border border-t pt-3 text-center text-xs">
+                Reach {target}. Your first two contacts are free.
               </p>
             </>
           ) : (
@@ -117,10 +115,10 @@ export function StorefrontActions({ name, category, fromPrice, isSignedIn }: Pro
           )}
 
           {isSignedIn ? (
-            <div className="text-body inline-flex flex-1 items-center justify-center gap-2 text-sm">
-              <Lock className="text-muted size-4 shrink-0" aria-hidden="true" />
-              Contact reveal coming soon
-            </div>
+            <Button fullWidth onClick={() => setEnquiryOpen(true)}>
+              <MessageCircle className="size-4" aria-hidden="true" />
+              Send an enquiry
+            </Button>
           ) : (
             <Button fullWidth onClick={goToLogin}>
               <MessageCircle className="size-4" aria-hidden="true" />
@@ -129,6 +127,13 @@ export function StorefrontActions({ name, category, fromPrice, isSignedIn }: Pro
           )}
         </div>
       </div>
+
+      <EnquiryForm
+        open={enquiryOpen}
+        onOpenChange={setEnquiryOpen}
+        professionalId={professionalId}
+        professionalName={name}
+      />
     </>
   )
 }

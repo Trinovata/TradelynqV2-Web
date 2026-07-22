@@ -199,6 +199,7 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
 
         {/* ── Sticky action rail (desktop) / bottom bar (mobile) ── */}
         <StorefrontActions
+          professionalId={pro.id}
           name={pro.name}
           category={pro.category?.name ?? null}
           fromPrice={fromPrice}
