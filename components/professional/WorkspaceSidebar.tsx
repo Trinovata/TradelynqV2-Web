@@ -67,7 +67,10 @@ export function WorkspaceSidebar({ tier }: { tier: TierId | null }) {
                       <item.icon className="size-4 shrink-0" aria-hidden="true" />
                       <span className="flex-1">{item.label}</span>
                       {locked && (
-                        <Lock className="text-brand-amber size-3.5" aria-label="Upgrade to unlock" />
+                        <Lock
+                          className="text-brand-amber size-3.5"
+                          aria-label="Upgrade to unlock"
+                        />
                       )}
                     </Link>
                   </li>
@@ -82,14 +85,14 @@ export function WorkspaceSidebar({ tier }: { tier: TierId | null }) {
       <div className="border-t border-white/10 p-3">
         <Link
           href="/subscription"
-          className="flex items-center justify-between rounded-[--radius-control] px-3 py-2 text-sm transition-[background-color] duration-150 hover:bg-sidebar-hover"
+          className="hover:bg-sidebar-hover flex items-center justify-between rounded-[--radius-control] px-3 py-2 text-sm transition-[background-color] duration-150"
         >
           <span className="text-white/60">Plan</span>
           <span className="font-medium text-white/90">{tierName}</span>
         </Link>
         <Link
           href="/credits"
-          className="flex items-center justify-between rounded-[--radius-control] px-3 py-2 text-sm transition-[background-color] duration-150 hover:bg-sidebar-hover"
+          className="hover:bg-sidebar-hover flex items-center justify-between rounded-[--radius-control] px-3 py-2 text-sm transition-[background-color] duration-150"
         >
           <span className="text-white/60">Credits</span>
           <span className="font-mono font-medium text-white/90 tabular-nums">—</span>

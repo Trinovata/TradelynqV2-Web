@@ -4,7 +4,12 @@ import { redirect } from 'next/navigation'
 import { Inbox } from 'lucide-react'
 import { requireProfessional } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
-import { getEnquiryInbox, tabForStatus, type EnquiryTab, type EnquiryRow } from '@/lib/enquiries/queries'
+import {
+  getEnquiryInbox,
+  tabForStatus,
+  type EnquiryTab,
+  type EnquiryRow,
+} from '@/lib/enquiries/queries'
 import { EmptyState, ErrorState } from '@/components/ui/States'
 import { cn } from '@/lib/utils/cn'
 import { EnquiryRowLink } from './EnquiryRowLink'
@@ -102,7 +107,9 @@ function EnquiriesContent({ rows, activeTab }: { rows: EnquiryRow[]; activeTab: 
           icon={Inbox}
           heading={empty.heading}
           body={empty.body}
-          action={activeTab === 'new' ? { label: 'Edit storefront', href: '/storefront' } : undefined}
+          action={
+            activeTab === 'new' ? { label: 'Edit storefront', href: '/storefront' } : undefined
+          }
         />
       ) : (
         <ul className="flex flex-col gap-2">

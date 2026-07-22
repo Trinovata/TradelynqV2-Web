@@ -23,7 +23,10 @@ export default async function CustomerLayout({ children }: { children: React.Rea
           <Link href="/home" className="text-foreground text-base font-semibold tracking-tight">
             Trade<span className="text-brand-cyan">Lynq</span>
           </Link>
-          <Link href="/search" className="text-body hover:text-foreground text-sm transition-colors">
+          <Link
+            href="/search"
+            className="text-body hover:text-foreground text-sm transition-colors"
+          >
             Find a professional
           </Link>
         </div>

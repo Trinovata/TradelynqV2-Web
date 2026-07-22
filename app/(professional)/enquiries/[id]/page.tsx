@@ -74,7 +74,9 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
       <header className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-foreground font-display text-2xl tracking-tight">{name}</h1>
-          <p className="text-muted mt-1 text-sm">Received {formatRelativeTime(enquiry.created_at)}</p>
+          <p className="text-muted mt-1 text-sm">
+            Received {formatRelativeTime(enquiry.created_at)}
+          </p>
         </div>
         <Badge status={enquiry.status}>{STATUS_LABEL[enquiry.status]}</Badge>
       </header>

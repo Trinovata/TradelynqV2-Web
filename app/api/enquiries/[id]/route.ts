@@ -30,7 +30,12 @@ type Action = (typeof ACTIONS)[number]
 /** The state machine, in one place. `from` are the states an action may leave. */
 const TRANSITIONS: Record<
   Action,
-  { from: readonly Status[]; to: Status; stamp?: 'accepted_at' | 'completed_at'; needsReason?: boolean }
+  {
+    from: readonly Status[]
+    to: Status
+    stamp?: 'accepted_at' | 'completed_at'
+    needsReason?: boolean
+  }
 > = {
   accept: { from: ['pending'], to: 'accepted', stamp: 'accepted_at' },
   decline: { from: ['pending'], to: 'declined', needsReason: true },

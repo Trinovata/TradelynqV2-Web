@@ -60,7 +60,12 @@ export function WorkspaceTabBar({ tier }: { tier: TierId | null }) {
   return (
     <>
       {moreOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="More">
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="More"
+        >
           <button
             type="button"
             aria-label="Close menu"
@@ -101,7 +106,10 @@ export function WorkspaceTabBar({ tier }: { tier: TierId | null }) {
                                 : 'text-body active:bg-accent-soft/60'
                             )}
                           >
-                            <item.icon className="text-muted size-4.5 shrink-0" aria-hidden="true" />
+                            <item.icon
+                              className="text-muted size-4.5 shrink-0"
+                              aria-hidden="true"
+                            />
                             <span className="flex-1">{item.label}</span>
                             {locked && (
                               <Lock

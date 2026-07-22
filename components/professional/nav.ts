@@ -92,7 +92,9 @@ export const NAV_SECTIONS: NavSection[] = [
 ]
 
 /** The four destinations that earn a permanent mobile slot (the fifth is "More"). */
-export const PRIMARY_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => i.primary)
+export const PRIMARY_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items).filter(
+  (i) => i.primary
+)
 
 export const SUPPORT_WHATSAPP =
   'https://wa.me/18686270000?text=' + encodeURIComponent('Hi TradeLynq support,')

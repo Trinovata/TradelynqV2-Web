@@ -98,9 +98,7 @@ export default async function DashboardPage() {
         monthKey
   )
   const queue = [...pending].sort((a, b) => a.created_at.localeCompare(b.created_at)).slice(0, 5)
-  const recent = [...rows]
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 5)
+  const recent = [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5)
 
   const steps = [
     { label: 'Write your bio', done: Boolean(profile?.bio), href: '/storefront' },
@@ -145,9 +143,18 @@ export default async function DashboardPage() {
       {!setupComplete && <SetupGuide steps={steps} done={stepsDone} />}
 
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile icon={Inbox} label="New enquiries" value={pending.length} accent={pending.length > 0} />
+        <StatTile
+          icon={Inbox}
+          label="New enquiries"
+          value={pending.length}
+          accent={pending.length > 0}
+        />
         <StatTile icon={Briefcase} label="Active work" value={active.length} />
-        <StatTile icon={CircleCheck} label="Completed this month" value={completedThisMonth.length} />
+        <StatTile
+          icon={CircleCheck}
+          label="Completed this month"
+          value={completedThisMonth.length}
+        />
         <StatTile
           icon={Star}
           label={`Rating${profile?.review_count ? ` · ${profile.review_count}` : ''}`}
@@ -176,7 +183,9 @@ export default async function DashboardPage() {
             <PanelEmpty
               heading="No enquiries yet"
               body="Share your storefront to bring in your first."
-              action={storefrontHref ? { label: 'View storefront', href: storefrontHref } : undefined}
+              action={
+                storefrontHref ? { label: 'View storefront', href: storefrontHref } : undefined
+              }
             />
           ) : (
             <ul className="divide-border divide-y">
@@ -209,7 +218,10 @@ function StatTile({
   return (
     <div className="border-border bg-card rounded-[--radius-card] border p-4">
       <div className="flex items-center gap-2">
-        <Icon className={cn('size-4', accent ? 'text-accent-ink' : 'text-muted')} aria-hidden="true" />
+        <Icon
+          className={cn('size-4', accent ? 'text-accent-ink' : 'text-muted')}
+          aria-hidden="true"
+        />
         <span className="text-muted truncate text-xs font-medium">{label}</span>
       </div>
       <p className="text-foreground mt-2 font-mono text-2xl tabular-nums">
@@ -344,7 +356,10 @@ function QueueRow({ row, nowMs }: { row: EnquiryRow; nowMs: number }) {
   const hours = Math.max(0, Math.floor((nowMs - new Date(row.created_at).getTime()) / 3_600_000))
   return (
     <li>
-      <Link href={`/enquiries/${row.id}`} className="hover:bg-card-subtle flex items-center gap-3 px-5 py-3.5 transition-colors">
+      <Link
+        href={`/enquiries/${row.id}`}
+        className="hover:bg-card-subtle flex items-center gap-3 px-5 py-3.5 transition-colors"
+      >
         <div className="min-w-0 flex-1">
           <span className="text-foreground text-sm font-medium">{name}</span>
           <p className="text-muted truncate text-sm">{row.description}</p>
@@ -364,7 +379,10 @@ function RecentRow({ row }: { row: EnquiryRow }) {
   const name = row.customer_first_name ?? 'Customer'
   return (
     <li>
-      <Link href={`/enquiries/${row.id}`} className="hover:bg-card-subtle flex items-center gap-3 px-5 py-3 transition-colors">
+      <Link
+        href={`/enquiries/${row.id}`}
+        className="hover:bg-card-subtle flex items-center gap-3 px-5 py-3 transition-colors"
+      >
         <div className="min-w-0 flex-1">
           <span className="text-foreground text-sm">{name}</span>
           <p className="text-muted truncate text-xs">{formatRelativeTime(row.created_at)}</p>

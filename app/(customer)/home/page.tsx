@@ -32,7 +32,9 @@ export default async function CustomerHomePage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <header className="mb-8">
-        <h1 className="text-foreground font-display text-3xl tracking-tight">Welcome, {firstName}</h1>
+        <h1 className="text-foreground font-display text-3xl tracking-tight">
+          Welcome, {firstName}
+        </h1>
         <p className="text-muted mt-2 max-w-prose text-sm">
           Describe what you need done and reach verified professionals across Trinidad &amp; Tobago
           — free, straight on WhatsApp.
@@ -47,8 +49,8 @@ export default async function CustomerHomePage() {
           <div>
             <h2 className="text-foreground text-lg font-medium">Find someone for the job</h2>
             <p className="text-muted mt-1 max-w-md text-sm">
-              Plumbing, beauty, tutoring, repairs — search by what you need and compare professionals
-              by their reviews.
+              Plumbing, beauty, tutoring, repairs — search by what you need and compare
+              professionals by their reviews.
             </p>
           </div>
           <Button asChild>

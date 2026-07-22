@@ -446,3 +446,68 @@
     animation: none;
   }
 }
+
+/* Long-form policy body (the /legal pages). Styles plain semantic HTML on
+   tokens so each policy page carries only content, and anchor targets clear the
+   sticky legal tab bar. Replaces V1's `prose prose-slate`. */
+.legal-prose {
+  color: var(--body);
+  line-height: 1.7;
+  font-size: 0.9375rem;
+}
+.legal-prose h2 {
+  color: var(--foreground);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.legal-prose h3 {
+  color: var(--foreground);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  scroll-margin-top: 5rem;
+}
+.legal-prose h4 {
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.legal-prose p {
+  margin-bottom: 1rem;
+}
+.legal-prose ul,
+.legal-prose ol {
+  margin: 0.75rem 0 1rem 1.25rem;
+}
+.legal-prose ul {
+  list-style: disc;
+}
+.legal-prose ol {
+  list-style: decimal;
+}
+.legal-prose li {
+  margin-bottom: 0.4rem;
+}
+.legal-prose a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.legal-prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+.legal-prose :first-child {
+  margin-top: 0;
+}

@@ -63,8 +63,10 @@ export function EnquiryActions({
         toast(json.error ?? 'That did not go through. Try again in a moment.', { kind: 'error' })
         return
       }
-      if (action === 'accept') toast(`Enquiry accepted. ${firstName} has been notified.`, { kind: 'success' })
-      else if (action === 'decline') toast(`Enquiry declined. ${firstName} has been notified.`, { kind: 'success' })
+      if (action === 'accept')
+        toast(`Enquiry accepted. ${firstName} has been notified.`, { kind: 'success' })
+      else if (action === 'decline')
+        toast(`Enquiry declined. ${firstName} has been notified.`, { kind: 'success' })
       else toast('Enquiry marked completed.', { kind: 'success' })
       setDeclineOpen(false)
       router.refresh()
@@ -92,8 +94,8 @@ export function EnquiryActions({
       <div className="border-border bg-card rounded-[--radius-card] border p-4">
         <h2 className="text-foreground font-medium">Decline this enquiry?</h2>
         <p className="text-muted mt-1 text-sm">
-          We&apos;ll let {firstName} know politely and suggest other professionals. Choose a reason —
-          it helps us and stays private to you.
+          We&apos;ll let {firstName} know politely and suggest other professionals. Choose a reason
+          — it helps us and stays private to you.
         </p>
 
         <fieldset className="mt-4 flex flex-col gap-1">
@@ -133,11 +135,7 @@ export function EnquiryActions({
         )}
 
         <div className="mt-4 flex gap-2">
-          <Button
-            variant="destructive"
-            isLoading={pending === 'decline'}
-            onClick={submitDecline}
-          >
+          <Button variant="destructive" isLoading={pending === 'decline'} onClick={submitDecline}>
             Decline enquiry
           </Button>
           <Button variant="ghost" onClick={() => setDeclineOpen(false)} disabled={pending !== null}>
