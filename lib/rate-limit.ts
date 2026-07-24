@@ -58,6 +58,7 @@ export type LimiterKey =
   | 'otp_send'
   | 'otp_verify'
   | 'admin_mutation'
+  | 'connection'
   | 'enquiry'
   | 'review'
   | 'search'
@@ -121,6 +122,13 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     failureMode: 'closed',
     rationale:
       'Admin actions are high-privilege; a compromised session must not act without bound.',
+  },
+  connection: {
+    limit: 10,
+    windowSeconds: 60,
+    failureMode: 'open',
+    rationale:
+      "Contact-number harvesting. A reveal notifies nobody (unlike enquiry at 3/60), but an unbounded loop scrapes professionals' numbers; degrade open so a genuine customer is never locked out of the core loop.",
   },
   enquiry: {
     limit: 3,

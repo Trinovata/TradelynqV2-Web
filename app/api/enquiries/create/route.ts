@@ -20,14 +20,11 @@ import {
   requireCustomer,
   ensureLegalAcceptances,
   requireCustomerConnectionGate,
+  CUSTOMER_CONTACT_LEGAL,
 } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
-
-// Reviews acceptance is the one the pack calls out; privacy + terms bind every
-// interaction. EULA is the professional's document, not the customer's.
-const REQUIRED_LEGAL = ['privacy', 'terms', 'reviews'] as const
 
 const bodySchema = z.object({
   professional_id: z.string().uuid(),
@@ -61,9 +58,12 @@ export async function POST(request: Request) {
 
   // 3. The professional must exist and be accepting. RLS only returns a row for an
   // ACTIVE public listing, so a null here means "not reachable" either way.
+  // Contact columns are selected here but returned ONLY in the 201, after every
+  // gate has passed and the connection is ensured — at which point the reveal is
+  // server-verified (D13). They never appear on an error path.
   const { data: professional, error: proError } = await ctx.supabase
     .from('professional_profiles')
-    .select('id, category_id, owner_name, business_name')
+    .select('id, category_id, owner_name, business_name, contact_phone, contact_whatsapp')
     .eq('id', professional_id)
     .maybeSingle()
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
   const firstName = professional.owner_name?.split(' ')[0] ?? professional.business_name
 
   // 4. Legal acceptances (403 LEGAL_ACCEPTANCE_REQUIRED with the missing set).
-  const legal = await ensureLegalAcceptances(ctx, REQUIRED_LEGAL)
+  const legal = await ensureLegalAcceptances(ctx, CUSTOMER_CONTACT_LEGAL)
   if (!legal.ok) return legal.response
 
   // 5. Connection gate — two free contacts, then identity verification.
@@ -150,5 +150,19 @@ export async function POST(request: Request) {
   // and emit `enquiry_created`.
   logger.info('enquiry:created', { enquiryId: enquiry.id, professionalId: professional_id })
 
-  return ok({ enquiry }, { status: 201 })
+  // FLAG (V2 addition beyond pack §4.1): `contact` rides along with the 201 so
+  // the success state can offer "Chat on WhatsApp now" (copy-public.md §5.11)
+  // and the rail can flip to revealed without a second round trip. Safe by 8.1's
+  // own rule — the enquiry auto-created the connection ("one gate, not two"),
+  // so the reveal is now server-verified.
+  return ok(
+    {
+      enquiry,
+      contact: {
+        phone: professional.contact_phone ?? null,
+        whatsapp: professional.contact_whatsapp ?? null,
+      },
+    },
+    { status: 201 }
+  )
 }
