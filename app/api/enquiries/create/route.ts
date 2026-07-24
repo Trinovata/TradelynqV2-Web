@@ -24,6 +24,7 @@ import {
 } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
+import { ensureConnection } from '@/lib/marketplace/connections'
 import { logger } from '@/lib/utils/logger'
 
 const bodySchema = z.object({
@@ -129,22 +130,9 @@ export async function POST(request: Request) {
   }
 
   // 8. Ensure the connection — this contact is now on the record and counts
-  // against the free-contact gate. Idempotent: a returning customer already has
-  // one, and the unique (customer, professional) pair absorbs the repeat.
-  const { error: connError } = await ctx.supabase
-    .from('connections')
-    .upsert(
-      { customer_id: ctx.userId, professional_id },
-      { onConflict: 'customer_id,professional_id', ignoreDuplicates: true }
-    )
-  if (connError) {
-    // The enquiry is written and is the source of truth; a missed connection row
-    // is self-healing (the count is recomputed by trigger). Log, don't fail.
-    logger.error('enquiry:connection_ensure_failed', {
-      professionalId: professional_id,
-      code: connError.code,
-    })
-  }
+  // against the free-contact gate. Idempotent and log-don't-fail: the enquiry
+  // is written and is the source of truth (see lib/marketplace/connections.ts).
+  await ensureConnection(ctx.supabase, ctx.userId, professional_id)
 
   // TODO(S135): notify the professional through the dispatcher (email/WhatsApp/push)
   // and emit `enquiry_created`.

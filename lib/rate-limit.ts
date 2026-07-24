@@ -59,6 +59,7 @@ export type LimiterKey =
   | 'otp_verify'
   | 'admin_mutation'
   | 'connection'
+  | 'save'
   | 'enquiry'
   | 'review'
   | 'search'
@@ -129,6 +130,13 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     failureMode: 'open',
     rationale:
       "Contact-number harvesting. A reveal notifies nobody (unlike enquiry at 3/60), but an unbounded loop scrapes professionals' numbers; degrade open so a genuine customer is never locked out of the core loop.",
+  },
+  save: {
+    limit: 30,
+    windowSeconds: 60,
+    failureMode: 'open',
+    rationale:
+      'DB-write stuffing via the save toggle. A save notifies nobody and reveals nothing, so the only threat is junk rows; sized above `connection` (10/60) so toggles cannot starve genuine reveals, and degrades open — same reasoning.',
   },
   enquiry: {
     limit: 3,
