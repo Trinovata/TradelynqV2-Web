@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { MapPin, ShieldCheck, BadgeCheck } from 'lucide-react'
 import { getProfessionalBySlug } from '@/lib/marketplace/queries'
+import { createClient } from '@/lib/supabase/server'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
@@ -40,6 +41,17 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
   const { slug } = await params
   const pro = await getProfessionalBySlug(slug)
   if (!pro) notFound()
+
+  // Auth state is read here (server) and handed to the action rail as a prop, so
+  // the CTA can branch without a client-side session fetch. The reveal gate (S083)
+  // is not built yet: a signed-out visitor is sent to sign in (the gate resumes
+  // there), while a signed-in user must NOT be bounced to /login — that page sees
+  // them authenticated and sends them straight back, a loop that reads as a dead CTA.
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isSignedIn = user !== null
 
   const priced = pro.services.filter((s) => typeof s.price_ttd === 'number')
   const fromPrice = priced.length ? Math.min(...priced.map((s) => s.price_ttd as number)) : null
@@ -187,9 +199,11 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
 
         {/* ── Sticky action rail (desktop) / bottom bar (mobile) ── */}
         <StorefrontActions
+          professionalId={pro.id}
           name={pro.name}
           category={pro.category?.name ?? null}
           fromPrice={fromPrice}
+          isSignedIn={isSignedIn}
         />
       </div>
     </div>

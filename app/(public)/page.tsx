@@ -2,9 +2,9 @@
  * Landing page (playbook S077).
  *
  * R2 "Ink & Paper" palette, real display typography (Bricolage Grotesque), and a
- * clean editorial hero — the type carries it, over a faint monochrome dot grid.
- * The signature moment is the scroll-driven 3D showcase: the real product,
- * browser-framed, rotating into view.
+ * clean editorial hero — the type carries it, over a single calm signature: a
+ * ring of connections orbiting the centre (ConnectionField), its middle cleared
+ * so the headline lands on quiet space.
  *
  * Persuasion structure (each section is one self-contained unit — short benefit
  * headline, one-line support, a proof element):
@@ -98,10 +98,10 @@ export default async function LandingPage() {
     <div className="flex flex-col">
       {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden">
-        {/* Signature: the marketplace as a living network of connections,
-            signals flowing from "You" out to the trades. */}
+        {/* Signature: a calm ring of connections orbiting the centre — the
+            customer, and the professionals reachable around them. One layer, no
+            labels, centre cleared so the headline reads on quiet space. */}
         <ConnectionField />
-        <DotGrid />
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-16 text-center sm:px-6 sm:pt-32 sm:pb-24">
           <span className="border-border bg-card text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
             <span className="bg-success size-1.5 rounded-full" aria-hidden="true" />

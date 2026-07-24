@@ -27,19 +27,33 @@ export const ROLE_HOME: Record<Role, string> = {
  * role. There are deliberately no overlaps.
  */
 export const ROUTE_NAMESPACES: Record<Role, readonly string[]> = {
-  customer: ['/home', '/enquiries', '/saved', '/jobs', '/invoices', '/kyc'],
+  // DECISION (reconciles the copy-deck vs route-contract conflict the audit
+  // flagged): the professional workspace (playbook S105, built and shipped)
+  // owns the flat paths its sidebar names — /enquiries, /jobs, /invoices, etc.
+  // The customer portal (v2/04, Phase 5, not yet built) therefore does NOT reuse
+  // those top-level paths; its received-work views will nest under /home
+  // (e.g. /home/enquiries, /home/jobs, /home/invoices) so no path is owned twice.
+  customer: ['/home', '/saved', '/kyc'],
   professional: [
     '/dashboard',
     '/onboarding',
-    '/enquiries-received',
+    '/enquiries',
     '/quotes',
-    '/work',
+    '/jobs',
+    '/bookings',
+    '/invoices',
     '/clients',
     '/storefront',
-    '/growth',
+    '/portfolio',
+    '/offerings',
+    '/reviews',
+    '/analytics',
+    '/readiness',
+    '/referrals',
     '/subscription',
-    '/tools',
+    '/credits',
     '/integrations',
+    '/settings',
   ],
   admin: ['/admin'],
 } as const

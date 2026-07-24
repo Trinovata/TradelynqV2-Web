@@ -67,7 +67,7 @@ export function CategoryShowcase({ categories }: { categories: CategoryTreeNode[
         return (
           <Reveal key={node.parent.slug} delay={Math.min(index, 11) * 35}>
             <Link
-              href={`/categories/${node.parent.slug}`}
+              href={`/search?q=${encodeURIComponent(node.parent.name)}`}
               className="group border-border bg-card hover:border-accent/30 focus-visible:outline-ring flex h-full flex-col gap-3 rounded-[--radius-card] border p-4 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_8px_28px_-16px_rgb(16_22_31/0.25)] focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <span

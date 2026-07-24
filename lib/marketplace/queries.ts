@@ -44,12 +44,15 @@ export async function decorateCards(
       ? supabase.from('categories').select('id, slug, name').in('id', categoryIds)
       : Promise.resolve({ data: [] as { id: string; slug: string; name: string }[] }),
     userIds.length
-      ? supabase.from('profiles').select('id, professional_subtype').in('id', userIds)
-      : Promise.resolve({ data: [] as { id: string; professional_subtype: string | null }[] }),
+      ? // profiles' RLS hides professional_subtype from anon/other users, so a
+        // direct join returns nothing. This SECURITY DEFINER RPC exposes it only
+        // for active-listed professionals — exactly what the badge already shows.
+        supabase.rpc('professional_subtypes', { p_user_ids: userIds })
+      : Promise.resolve({ data: [] as { user_id: string; professional_subtype: string | null }[] }),
   ])
 
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]))
-  const subtypeByUser = new Map((profiles ?? []).map((p) => [p.id, p.professional_subtype]))
+  const subtypeByUser = new Map((profiles ?? []).map((p) => [p.user_id, p.professional_subtype]))
 
   return rows.map((row) =>
     buildProfessionalCardData(row as never, {
@@ -176,11 +179,13 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
   if (error || !data) return null
   const row = data as unknown as StorefrontRow
 
-  const [{ data: category }, { data: profile }, { data: reviews }] = await Promise.all([
+  const [{ data: category }, { data: subtypeRows }, { data: reviews }] = await Promise.all([
     row.category_id
       ? supabase.from('categories').select('slug, name').eq('id', row.category_id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from('profiles').select('professional_subtype').eq('id', row.user_id).maybeSingle(),
+    // Via the RPC, not a profiles join — profiles' RLS hides professional_subtype
+    // from anon/other users, which made the badge always read 'sole_trader'.
+    supabase.rpc('professional_subtypes', { p_user_ids: [row.user_id] }),
     supabase
       .from('reviews')
       .select(
@@ -217,7 +222,7 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     }
   })
 
-  const subtype = profile?.professional_subtype ?? null
+  const subtype = subtypeRows?.[0]?.professional_subtype ?? null
   const track =
     subtype === 'student_entrepreneur'
       ? 'student'
