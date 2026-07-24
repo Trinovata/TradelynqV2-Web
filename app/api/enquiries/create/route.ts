@@ -16,7 +16,11 @@
  * log, so nothing here has to trust the client for status.
  */
 import { z } from 'zod'
-import { requireCustomer, ensureLegalAcceptances, requireCustomerConnectionGate } from '@/lib/access/api'
+import {
+  requireCustomer,
+  ensureLegalAcceptances,
+  requireCustomerConnectionGate,
+} from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
@@ -93,7 +97,11 @@ export async function POST(request: Request) {
     .eq('professional_id', professional_id)
     .gte('created_at', sixtySecondsAgo)
   if ((recent ?? 0) > 0) {
-    return err('DUPLICATE', { resource: 'enquiry' }, `You've just sent this — give ${firstName} a moment to reply.`)
+    return err(
+      'DUPLICATE',
+      { resource: 'enquiry' },
+      `You've just sent this — give ${firstName} a moment to reply.`
+    )
   }
 
   // 7. Write the enquiry. The BEFORE INSERT guard forces status=pending and an
@@ -113,7 +121,10 @@ export async function POST(request: Request) {
     .single()
 
   if (writeError) {
-    logger.error('enquiry:create_failed', { professionalId: professional_id, code: writeError.code })
+    logger.error('enquiry:create_failed', {
+      professionalId: professional_id,
+      code: writeError.code,
+    })
     return err('INTERNAL')
   }
 
@@ -129,7 +140,10 @@ export async function POST(request: Request) {
   if (connError) {
     // The enquiry is written and is the source of truth; a missed connection row
     // is self-healing (the count is recomputed by trigger). Log, don't fail.
-    logger.error('enquiry:connection_ensure_failed', { professionalId: professional_id, code: connError.code })
+    logger.error('enquiry:connection_ensure_failed', {
+      professionalId: professional_id,
+      code: connError.code,
+    })
   }
 
   // TODO(S135): notify the professional through the dispatcher (email/WhatsApp/push)

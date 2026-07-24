@@ -86,7 +86,10 @@ export function EnquiryForm({
           message: 'Please review and accept our latest policies before sending an enquiry.',
         })
       } else {
-        setOutcome({ kind: 'error', message: json.error ?? 'That didn’t send. Try again in a moment.' })
+        setOutcome({
+          kind: 'error',
+          message: json.error ?? 'That didn’t send. Try again in a moment.',
+        })
       }
     } catch {
       setOutcome({ kind: 'error', message: 'Check your connection and try again.' })

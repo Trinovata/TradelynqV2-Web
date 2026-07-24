@@ -38,7 +38,13 @@ type Props = {
   isSignedIn: boolean
 }
 
-export function StorefrontActions({ professionalId, name, category, fromPrice, isSignedIn }: Props) {
+export function StorefrontActions({
+  professionalId,
+  name,
+  category,
+  fromPrice,
+  isSignedIn,
+}: Props) {
   const router = useRouter()
   const [enquiryOpen, setEnquiryOpen] = React.useState(false)
 

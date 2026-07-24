@@ -51,7 +51,9 @@ export default async function CustomerEnquiriesPage() {
 
       <header className="mb-6">
         <h1 className="text-foreground font-display text-3xl tracking-tight">Your enquiries</h1>
-        <p className="text-muted mt-1 text-sm">Everyone you&rsquo;ve reached, and where it stands.</p>
+        <p className="text-muted mt-1 text-sm">
+          Everyone you&rsquo;ve reached, and where it stands.
+        </p>
       </header>
 
       {error ? (
@@ -67,12 +69,11 @@ export default async function CustomerEnquiriesPage() {
         <ul className="flex flex-col gap-2">
           {rows.map((row) => {
             const proName = row.professional?.business_name ?? 'A professional'
-            const proHref = row.professional?.slug ? `/professionals/${row.professional.slug}` : null
+            const proHref = row.professional?.slug
+              ? `/professionals/${row.professional.slug}`
+              : null
             return (
-              <li
-                key={row.id}
-                className="border-border bg-card rounded-[--radius-card] border p-4"
-              >
+              <li key={row.id} className="border-border bg-card rounded-[--radius-card] border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     {proHref ? (
