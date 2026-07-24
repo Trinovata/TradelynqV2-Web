@@ -10,6 +10,7 @@
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { MobileNavBar } from '@/components/layout/MobileNavBar'
+import { Toaster } from '@/components/ui/Toast'
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,6 +20,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <main className="flex flex-1 flex-col pb-16 md:pb-0">{children}</main>
       <Footer />
       <MobileNavBar />
+      {/* One Toaster per shell (Toast.tsx). The storefront gate gauntlet (S083)
+          gave the public surfaces their first toasts — the reveal success and
+          the legal modal's retry error (copy-public.md §5.12). */}
+      <Toaster />
     </div>
   )
 }

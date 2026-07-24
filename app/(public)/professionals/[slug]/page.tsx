@@ -4,14 +4,15 @@
  * The page a search leads to and the reason a professional lists at all. Server
  * component: it fetches everything up front so the first paint is the storefront,
  * and it renders structured data (JSON-LD) so the same content that persuades a
- * person also earns the search result. Contact details are absent from the data
- * by construction — the reveal gate (S083) grants them through a separate path;
- * the sticky action rail is where that gate will fire.
+ * person also earns the search result. Contact details are absent from the public
+ * data by construction — the reveal gate (S083) grants them through
+ * `getViewerGateState` (page load, existing connection) or `POST /api/connections`
+ * (the gauntlet in the sticky action rail).
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { MapPin, ShieldCheck, BadgeCheck } from 'lucide-react'
-import { getProfessionalBySlug } from '@/lib/marketplace/queries'
+import { getProfessionalBySlug, getViewerGateState } from '@/lib/marketplace/queries'
 import { createClient } from '@/lib/supabase/server'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
@@ -42,16 +43,17 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
   const pro = await getProfessionalBySlug(slug)
   if (!pro) notFound()
 
-  // Auth state is read here (server) and handed to the action rail as a prop, so
-  // the CTA can branch without a client-side session fetch. The reveal gate (S083)
-  // is not built yet: a signed-out visitor is sent to sign in (the gate resumes
-  // there), while a signed-in user must NOT be bounced to /login — that page sees
-  // them authenticated and sends them straight back, a loop that reads as a dead CTA.
+  // Auth + gate state are read here (server) and handed to the action rail as
+  // props, so the first paint already shows a returning customer their revealed
+  // rail — no client-side session fetch, no flash of the locked state. Contact
+  // details enter the payload ONLY when getViewerGateState confirms a
+  // connection row (D13: API-redacted until the server verifies reveal).
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   const isSignedIn = user !== null
+  const gate = isSignedIn ? await getViewerGateState(pro.id) : null
 
   const priced = pro.services.filter((s) => typeof s.price_ttd === 'number')
   const fromPrice = priced.length ? Math.min(...priced.map((s) => s.price_ttd as number)) : null
@@ -201,9 +203,16 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
         <StorefrontActions
           professionalId={pro.id}
           name={pro.name}
+          firstName={pro.ownerFirstName}
           category={pro.category?.name ?? null}
           fromPrice={fromPrice}
           isSignedIn={isSignedIn}
+          initialRevealed={gate?.revealed ?? false}
+          initialContact={gate?.contact ?? null}
+          connectionCount={gate?.connectionCount ?? 0}
+          kycStatus={gate?.kycStatus ?? null}
+          websiteUrl={pro.websiteUrl}
+          instagramHandle={pro.instagramHandle}
         />
       </div>
     </div>
