@@ -76,6 +76,13 @@ export async function POST(request: Request) {
   const ctx = await requireCustomer(request)
   if (!ctx.ok) return ctx.response
 
+  // 3. Legal acceptances (403 LEGAL_ACCEPTANCE_REQUIRED with the missing set —
+  // the client renders the inline modal and retries). Canon order: legal sits
+  // directly after auth, before the body is even parsed — it depends only on
+  // the session, and a caller who owes an acceptance learns nothing else first.
+  const legal = await ensureLegalAcceptances(ctx, CUSTOMER_CONTACT_LEGAL)
+  if (!legal.ok) return legal.response
+
   let raw: unknown
   try {
     raw = await request.json()
@@ -89,7 +96,7 @@ export async function POST(request: Request) {
   }
   const { professional_id } = parsed.data
 
-  // 3. The professional must exist and be active. RLS only returns a row for an
+  // 4. The professional must exist and be active. RLS only returns a row for an
   // ACTIVE public listing, so a null here is the flow's "404-equivalent with
   // search suggestion" (v2/08 §8.1) — indistinguishable from never-existed, no
   // status leakage.
@@ -106,11 +113,6 @@ export async function POST(request: Request) {
   if (!professional) {
     return err('NOT_FOUND', { resource: 'professional' })
   }
-
-  // 4. Legal acceptances (403 LEGAL_ACCEPTANCE_REQUIRED with the missing set —
-  // the client renders the inline modal and retries).
-  const legal = await ensureLegalAcceptances(ctx, CUSTOMER_CONTACT_LEGAL)
-  if (!legal.ok) return legal.response
 
   // 5. Connection gate — two free contacts, then identity verification.
   const gate = await requireCustomerConnectionGate(ctx, professional_id)
