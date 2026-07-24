@@ -71,6 +71,11 @@ export const STOREFRONT_COPY = {
   /** §5.12 — Storefront states. */
   states: {
     revealToast: 'Contact details unlocked.',
+    /** Save toast (on) — success, with the `View saved` action → /saved. */
+    savedToast: 'Saved to your list.',
+    savedToastAction: 'View saved',
+    /** Save toast (off) — info. */
+    removedToast: 'Removed from your list.',
     unavailableHeading: "This listing isn't available",
     unavailableBody:
       'It may have been removed or is no longer active. Search for another professional near you.',

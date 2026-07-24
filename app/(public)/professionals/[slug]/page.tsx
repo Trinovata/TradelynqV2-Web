@@ -13,7 +13,9 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { MapPin, ShieldCheck, BadgeCheck } from 'lucide-react'
 import { getProfessionalBySlug, getViewerGateState } from '@/lib/marketplace/queries'
+import { isProfessionalSaved } from '@/lib/marketplace/saved'
 import { createClient } from '@/lib/supabase/server'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
@@ -53,7 +55,9 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
     data: { user },
   } = await supabase.auth.getUser()
   const isSignedIn = user !== null
-  const gate = isSignedIn ? await getViewerGateState(pro.id) : null
+  const [gate, initialSaved] = isSignedIn
+    ? await Promise.all([getViewerGateState(pro.id), isProfessionalSaved(pro.id)])
+    : [null, false]
 
   const priced = pro.services.filter((s) => typeof s.price_ttd === 'number')
   const fromPrice = priced.length ? Math.min(...priced.map((s) => s.price_ttd as number)) : null
@@ -110,6 +114,17 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
             <div className="flex flex-1 flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-display-sm text-foreground">{pro.name}</h1>
+                {/* Mobile save mount (S084): the bottom bar spec (§5.9) lists
+                    only reveal + quote, so the save toggle lives up here.
+                    Desktop uses the rail's instance — the two are never
+                    visible at the same breakpoint. */}
+                <SaveButton
+                  professionalId={pro.id}
+                  name={pro.name}
+                  isSignedIn={isSignedIn}
+                  initialSaved={initialSaved}
+                  className="ml-auto lg:hidden"
+                />
               </div>
               {pro.category && <p className="text-body text-sm">{pro.category.name}</p>}
               {pro.areas.length > 0 && (
@@ -209,6 +224,7 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
           isSignedIn={isSignedIn}
           initialRevealed={gate?.revealed ?? false}
           initialContact={gate?.contact ?? null}
+          initialSaved={initialSaved}
           connectionCount={gate?.connectionCount ?? 0}
           kycStatus={gate?.kycStatus ?? null}
           websiteUrl={pro.websiteUrl}
