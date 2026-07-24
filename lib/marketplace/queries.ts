@@ -97,10 +97,18 @@ export type StorefrontReview = {
   seeded: boolean
 }
 
+/** Contact details, present only after a server-verified reveal (D13). */
+export type StorefrontContact = { phone: string | null; whatsapp: string | null }
+
 export type Storefront = {
   id: string
   slug: string
   name: string
+  /**
+   * First name of the owner, for the rail's `Contact {first name}` and the
+   * enquiry modal (copy-public.md §5.9/§5.11). Falls back to the business name.
+   */
+  ownerFirstName: string
   tagline: string | null
   bio: string | null
   avatarUrl: string | null
@@ -109,17 +117,20 @@ export type Storefront = {
   areas: string[]
   services: { name: string; price_ttd?: number; description?: string }[]
   businessHours: unknown
+  /** Public links (anon column grant) — rendered on the REVEALED rail (§5.9). */
+  websiteUrl: string | null
+  instagramHandle: string | null
   verification: { idVerified: boolean; insured: boolean; fullyVerified: boolean }
   track: 'student' | 'sole_trader' | 'registered'
   rating: { average: number; count: number } | null
   distribution: Record<'5' | '4' | '3' | '2' | '1', number>
   reviews: StorefrontReview[]
   /**
-   * Present ONLY once the reveal gate passes (S083). Absent from this payload by
-   * construction on the public path — the fields are never selected, so they
-   * cannot leak by a rendering mistake.
+   * Present ONLY once the reveal gate passes (S083, via `getViewerGateState` /
+   * `POST /api/connections`). Always null on this public path — the fields are
+   * never selected, so they cannot leak by a rendering mistake.
    */
-  contact: null
+  contact: StorefrontContact | null
 }
 
 /**
@@ -147,6 +158,7 @@ type StorefrontRow = {
   user_id: string
   slug: string | null
   business_name: string
+  owner_name: string | null
   tagline: string | null
   bio: string | null
   profile_photo_url: string | null
@@ -155,6 +167,8 @@ type StorefrontRow = {
   service_areas: string[] | null
   services: unknown
   business_hours: unknown
+  website_url: string | null
+  instagram_handle: string | null
   verification_status: string
   national_id_verified: boolean
   has_insurance: boolean
@@ -168,8 +182,9 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
   const { data, error } = await supabase
     .from('professional_profiles')
     .select(
-      'id, user_id, slug, business_name, tagline, bio, profile_photo_url, cover_photo_url, ' +
-        'category_id, service_areas, services, business_hours, verification_status, ' +
+      'id, user_id, slug, business_name, owner_name, tagline, bio, profile_photo_url, ' +
+        'cover_photo_url, category_id, service_areas, services, business_hours, ' +
+        'website_url, instagram_handle, verification_status, ' +
         'national_id_verified, has_insurance, average_rating, review_count, listing_status'
     )
     .eq('slug', slug)
@@ -236,6 +251,7 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     id: row.id,
     slug: row.slug ?? row.id,
     name: row.business_name,
+    ownerFirstName: row.owner_name?.trim().split(/\s+/)[0] || row.business_name,
     tagline: row.tagline,
     bio: row.bio,
     avatarUrl: row.profile_photo_url,
@@ -244,6 +260,8 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     areas: row.service_areas ?? [],
     services: Array.isArray(row.services) ? (row.services as Storefront['services']) : [],
     businessHours: row.business_hours,
+    websiteUrl: row.website_url,
+    instagramHandle: row.instagram_handle,
     verification: {
       idVerified: row.national_id_verified,
       insured: row.has_insurance,
@@ -258,6 +276,74 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     distribution,
     reviews: storefrontReviews,
     contact: null,
+  }
+}
+
+// ── Viewer gate state (S083) ─────────────────────────────────────────────────
+
+export type ViewerGateState = {
+  /** A connection row exists for this (viewer, professional) pair. */
+  revealed: boolean
+  /** Present ONLY when revealed — selected by explicit column list. */
+  contact: StorefrontContact | null
+  connectionCount: number
+  kycStatus: string | null
+}
+
+/**
+ * The signed-in viewer's gate state for one professional, read server-side so
+ * the storefront's first paint already shows a revealed rail to a returning
+ * customer. Returns null when nobody is signed in.
+ *
+ * The customer's own `connections` rows are RLS-visible, so the pair check runs
+ * on the RLS client. The contact columns are selected ONLY once the pair row is
+ * confirmed, and by explicit column list — `authenticated` has table-wide
+ * SELECT on active rows, so redaction IS the column list (migration
+ * 20260719000005: "Redaction is the API's job … anything reading this table
+ * directly for a public surface MUST select an explicit column list").
+ *
+ * For a non-customer viewer (a professional browsing a peer) the
+ * customer_profiles lookup returns nothing and the state degrades to the
+ * unrevealed rail; the API answers any reveal attempt with FORBIDDEN_ROLE.
+ */
+export async function getViewerGateState(professionalId: string): Promise<ViewerGateState | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const [{ data: profile }, { data: pair }] = await Promise.all([
+    supabase
+      .from('customer_profiles')
+      .select('connection_count, kyc_status')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('connections')
+      .select('id')
+      .eq('customer_id', user.id)
+      .eq('professional_id', professionalId)
+      .maybeSingle(),
+  ])
+
+  const revealed = Boolean(pair)
+
+  let contact: StorefrontContact | null = null
+  if (revealed) {
+    const { data: pro } = await supabase
+      .from('professional_profiles')
+      .select('contact_phone, contact_whatsapp')
+      .eq('id', professionalId)
+      .maybeSingle()
+    if (pro) contact = { phone: pro.contact_phone, whatsapp: pro.contact_whatsapp }
+  }
+
+  return {
+    revealed,
+    contact,
+    connectionCount: profile?.connection_count ?? 0,
+    kycStatus: profile?.kyc_status ?? null,
   }
 }
 
