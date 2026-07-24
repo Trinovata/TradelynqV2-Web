@@ -59,6 +59,11 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
     ? await Promise.all([getViewerGateState(pro.id), isProfessionalSaved(pro.id)])
     : [null, false]
 
+  // Save is a customer affordance. Signed-out viewers keep the button (it
+  // routes to login); a signed-in professional or admin loses it entirely
+  // rather than being offered an action the API answers with FORBIDDEN_ROLE.
+  const canSave = !isSignedIn || (gate?.isCustomer ?? false)
+
   const priced = pro.services.filter((s) => typeof s.price_ttd === 'number')
   const fromPrice = priced.length ? Math.min(...priced.map((s) => s.price_ttd as number)) : null
 
@@ -118,13 +123,15 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
                     only reveal + quote, so the save toggle lives up here.
                     Desktop uses the rail's instance — the two are never
                     visible at the same breakpoint. */}
-                <SaveButton
-                  professionalId={pro.id}
-                  name={pro.name}
-                  isSignedIn={isSignedIn}
-                  initialSaved={initialSaved}
-                  className="ml-auto lg:hidden"
-                />
+                {canSave && (
+                  <SaveButton
+                    professionalId={pro.id}
+                    name={pro.name}
+                    isSignedIn={isSignedIn}
+                    initialSaved={initialSaved}
+                    className="ml-auto lg:hidden"
+                  />
+                )}
               </div>
               {pro.category && <p className="text-body text-sm">{pro.category.name}</p>}
               {pro.areas.length > 0 && (
@@ -225,6 +232,7 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
           initialRevealed={gate?.revealed ?? false}
           initialContact={gate?.contact ?? null}
           initialSaved={initialSaved}
+          canSave={canSave}
           connectionCount={gate?.connectionCount ?? 0}
           kycStatus={gate?.kycStatus ?? null}
           websiteUrl={pro.websiteUrl}

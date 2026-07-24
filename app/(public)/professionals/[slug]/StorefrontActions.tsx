@@ -72,6 +72,12 @@ type Props = {
   initialContact: ContactInfo | null
   /** Whether the viewer has already saved this professional (S084). */
   initialSaved: boolean
+  /**
+   * Whether the save affordance renders at all (S084). True for signed-out
+   * viewers (the button routes them to login) and customers; false for a
+   * signed-in professional or admin, for whom the API would only ever 403.
+   */
+  canSave: boolean
   connectionCount: number
   kycStatus: string | null
   websiteUrl: string | null
@@ -93,6 +99,7 @@ export function StorefrontActions({
   initialRevealed,
   initialContact,
   initialSaved,
+  canSave,
   connectionCount: initialConnectionCount,
   websiteUrl,
   instagramHandle,
@@ -374,14 +381,16 @@ export function StorefrontActions({
               </Button>
               {/* §3.4 rail order: quote · save · share. ShareSheet mounts
                   beside this when it lands. */}
-              <div className="flex justify-center">
-                <SaveButton
-                  professionalId={professionalId}
-                  name={name}
-                  isSignedIn={isSignedIn}
-                  initialSaved={initialSaved}
-                />
-              </div>
+              {canSave && (
+                <div className="flex justify-center">
+                  <SaveButton
+                    professionalId={professionalId}
+                    name={name}
+                    isSignedIn={isSignedIn}
+                    initialSaved={initialSaved}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

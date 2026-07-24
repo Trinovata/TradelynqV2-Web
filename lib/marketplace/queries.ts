@@ -288,6 +288,12 @@ export type ViewerGateState = {
   contact: StorefrontContact | null
   connectionCount: number
   kycStatus: string | null
+  /**
+   * The viewer owns a customer_profiles row. False for a professional or admin
+   * browsing a storefront — surfaces hide customer-only affordances (the save
+   * toggle) rather than offering an action the API will 403.
+   */
+  isCustomer: boolean
 }
 
 /**
@@ -344,6 +350,9 @@ export async function getViewerGateState(professionalId: string): Promise<Viewer
     contact,
     connectionCount: profile?.connection_count ?? 0,
     kycStatus: profile?.kyc_status ?? null,
+    // A customer always owns a customer_profiles row (created at role
+    // assignment); its absence means a professional or admin is browsing.
+    isCustomer: profile !== null,
   }
 }
 
