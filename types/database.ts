@@ -2480,6 +2480,42 @@ export type Database = {
           },
         ]
       }
+      saved_professionals: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          professional_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          professional_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_professionals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_professionals_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_messages: {
         Row: {
           cancelled_at: string | null
@@ -3279,7 +3315,6 @@ export type Database = {
         Returns: undefined
       }
       slugify: { Args: { input: string }; Returns: string }
-      test_dblink_conninfo: { Args: never; Returns: string }
       unique_slug: {
         Args: {
           base_text: string
