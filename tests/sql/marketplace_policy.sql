@@ -1436,8 +1436,11 @@ DO $$
 DECLARE
   visible INT;
 BEGIN
-  SELECT COUNT(*) INTO visible FROM public.saved_professionals;
-  ASSERT visible = 2, format('admin oversight sees %s of 2 saved rows', visible);
+  -- Scoped to the fixture customer, not the whole table — dev seed data may
+  -- coexist (the section-35 lesson: count local rows to prove a local fact).
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals
+   WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b';
+  ASSERT visible = 2, format('admin oversight sees %s of the fixture''s 2 saved rows', visible);
 END $$;
 
 SET LOCAL request.jwt.claims TO
