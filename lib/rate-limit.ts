@@ -65,6 +65,7 @@ export type LimiterKey =
   | 'search'
   | 'chatbot'
   | 'feedback'
+  | 'store_order'
   | 'ai_tool'
 
 type LimiterConfig = {
@@ -144,6 +145,13 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     failureMode: 'open',
     rationale:
       'Spam to professionals. Genuine users rarely exceed this; degrade open to protect conversion.',
+  },
+  store_order: {
+    limit: 5,
+    windowSeconds: 3600,
+    failureMode: 'open',
+    rationale:
+      'Merch orders are hand-fulfilled and billed off-app after human confirmation, so a junk order costs admin minutes, never money. Five an hour absorbs any genuine buyer; degrade open — a blocked real order is lost revenue.',
   },
   feedback: {
     limit: 5,

@@ -202,6 +202,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: '/for-tradespeople', destination: '/for-professionals', permanent: true },
+      { source: '/store', destination: '/merch', permanent: true },
       { source: '/for-customers', destination: '/customer-guide', permanent: true },
       { source: '/homeowner-guide', destination: '/customer-guide', permanent: true },
     ]
