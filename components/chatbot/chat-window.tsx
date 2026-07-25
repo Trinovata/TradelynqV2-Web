@@ -8,7 +8,7 @@
  * primitive already supplies chrome, title, and dismissal.
  */
 import { X } from 'lucide-react'
-import { MOTION } from '@/lib/motion'
+import { MOTION, motion } from '@/lib/motion'
 import { cn } from '@/lib/utils/cn'
 import type { ChatMessage } from '@/hooks/use-chatbot'
 import { MessageList } from './message-list'
@@ -64,7 +64,10 @@ export function ChatWindow({
           type="button"
           onClick={onClose}
           aria-label="Close chat"
-          className="text-muted hover:text-foreground flex size-7 items-center justify-center rounded-lg transition-transform duration-75 ease-out active:scale-[0.98]"
+          className={cn(
+            'text-muted hover:text-foreground flex size-7 items-center justify-center rounded-lg',
+            motion('press')
+          )}
         >
           <X className="size-4" aria-hidden="true" />
         </button>

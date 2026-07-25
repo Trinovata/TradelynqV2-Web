@@ -231,10 +231,13 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
                 </div>
               </div>
             ) : (
+              // Deck §5.6 "No reviews" — one string, split at its em-dash to
+              // fit EmptyState's heading/body slots. The previous body was
+              // invented copy and said "clients" (canon: customers).
               <EmptyState
                 icon={ShieldCheck}
                 heading="No reviews yet"
-                body="This professional is new to TradeLynq. Reviews appear here once clients leave verified feedback."
+                body="This professional is new on TradeLynq."
               />
             )}
           </section>

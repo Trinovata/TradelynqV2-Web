@@ -111,9 +111,34 @@ describe('POST /api/chatbot', () => {
     expect((await res.json()).code).toBe('INVALID_INPUT')
   })
 
-  it('caps a single message at 500 characters', async () => {
+  it('caps a single USER message at 500 characters', async () => {
     const res = await POST(chatRequest({ messages: [{ role: 'user', content: 'x'.repeat(501) }] }))
     expect(res.status).toBe(422)
+  })
+
+  // Regression (verify round 1): a single 500-char cap on ALL roles made every
+  // live conversation 422 from turn two — a max_tokens-300 reply routinely
+  // exceeds 500 chars, and it re-enters the wire as history on the next send.
+  it('accepts an assistant history message longer than the user cap', async () => {
+    const res = await POST(
+      chatRequest({
+        messages: [
+          { role: 'user', content: 'What does Growth cost?' },
+          { role: 'assistant', content: 'a'.repeat(700) },
+          { role: 'user', content: 'And Studio?' },
+        ],
+      })
+    )
+    expect(res.status).toBe(200)
+    expect(res.headers.get('x-lynq-mode')).toBe('fallback')
+  })
+
+  it('still bounds assistant history at 2,000 characters', async () => {
+    const res = await POST(
+      chatRequest({ messages: [{ role: 'assistant', content: 'a'.repeat(2001) }] })
+    )
+    expect(res.status).toBe(422)
+    expect((await res.json()).code).toBe('INVALID_INPUT')
   })
 
   it('rejects an unknown role at the schema', async () => {
@@ -131,6 +156,22 @@ describe('POST /api/chatbot', () => {
     const text = await res.text()
     expect(text).toContain(LYNQ_FALLBACK)
     expect(text).toContain('[ACTION:contact]')
+  })
+
+  // Regression (verify round 1): the chatbot limiter degrades OPEN, and the
+  // public widget has no credit bound — a degraded check must answer with the
+  // zero-cost static fallback, never an unmetered live model call.
+  it('serves the static fallback, not a live call, when the rate limit is degraded', async () => {
+    checkRateLimitMock.mockResolvedValue({ ok: true, remaining: 10, degraded: true })
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-test')
+    const fetchMock = vi.fn(async () => new Response(sseStream(['never reached'])))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const res = await POST(chatRequest({ messages: [{ role: 'user', content: 'hi' }] }))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('x-lynq-mode')).toBe('fallback')
+    expect(await res.text()).toContain(LYNQ_FALLBACK)
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('streams assembled text_delta chunks from the live path, forwarding only the last 10', async () => {

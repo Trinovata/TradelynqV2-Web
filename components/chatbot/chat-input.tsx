@@ -11,6 +11,7 @@
 import { useState, type KeyboardEvent } from 'react'
 import { Send } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
+import { motion } from '@/lib/motion'
 import { LYNQ_MAX_INPUT_CHARS, lynqSupportHref } from '@/lib/chatbot/prompt'
 
 type ChatInputProps = {
@@ -82,7 +83,8 @@ export function ChatInput({ onSend, disabled, loading }: ChatInputProps) {
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-75 ease-out active:scale-[0.98]',
+            'flex size-9 shrink-0 items-center justify-center rounded-lg',
+            motion('press'),
             canSend
               ? 'bg-accent text-accent-foreground hover:bg-accent/90'
               : 'bg-card-subtle text-muted cursor-not-allowed'

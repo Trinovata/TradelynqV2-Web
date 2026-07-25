@@ -16,6 +16,7 @@
 import { useState, useCallback, useRef } from 'react'
 import {
   LYNQ_GREETING,
+  LYNQ_MAX_ASSISTANT_CHARS,
   LYNQ_MAX_MESSAGES,
   LYNQ_SESSION_LIMIT_MESSAGE,
   LYNQ_ERROR_MESSAGE,
@@ -79,11 +80,20 @@ export function useChatbot() {
       setLoading(true)
 
       try {
-        // Greeting excluded; only the recent window travels.
+        // Greeting excluded; only the recent window travels. Assistant turns
+        // are clamped to the wire cap so an unusually long reply can never make
+        // the NEXT send fail validation — user turns pass through untouched
+        // (truncating a person's words would change what they asked).
         const payload = [...messages.slice(1), userMessage]
           .filter((message) => message.content.trim().length > 0)
           .slice(-HISTORY_WINDOW)
-          .map((message) => ({ role: message.role, content: message.content }))
+          .map((message) => ({
+            role: message.role,
+            content:
+              message.role === 'assistant'
+                ? message.content.slice(0, LYNQ_MAX_ASSISTANT_CHARS)
+                : message.content,
+          }))
 
         const response = await fetch('/api/chatbot', {
           method: 'POST',

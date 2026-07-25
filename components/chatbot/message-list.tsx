@@ -12,6 +12,7 @@
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils/cn'
+import { motion } from '@/lib/motion'
 import { lynqSupportHref, type LynqAction } from '@/lib/chatbot/prompt'
 import type { ChatMessage } from '@/hooks/use-chatbot'
 
@@ -22,8 +23,10 @@ const ACTION_LINKS: Record<Exclude<LynqAction, 'contact'>, { label: string; href
   signup: { label: 'Sign up', href: '/signup' },
 }
 
-const chipClassName =
-  'bg-accent-soft text-accent-ink inline-block rounded-full px-2.5 py-1 text-xs font-medium transition-transform duration-75 ease-out active:scale-[0.98]'
+const chipClassName = cn(
+  'bg-accent-soft text-accent-ink inline-block rounded-full px-2.5 py-1 text-xs font-medium',
+  motion('press')
+)
 
 function ActionChips({ actions }: { actions: LynqAction[] }) {
   const supportHref = lynqSupportHref()

@@ -32,8 +32,18 @@ import { SUPPORT_PHONE } from '@/lib/constants/contact'
 /** Max messages a visitor may send per session (client-enforced; zod caps the wire). */
 export const LYNQ_MAX_MESSAGES = 20
 
-/** Max characters per message. */
+/** Max characters per USER message — what the composer enforces. */
 export const LYNQ_MAX_INPUT_CHARS = 500
+
+/**
+ * Max characters per ASSISTANT message in forwarded history. Assistant turns
+ * are the model's own output, not visitor input, so the composer cap must not
+ * apply: a live reply at `max_tokens` 300 routinely exceeds 500 characters,
+ * and capping history at 500 made every conversation 422 from turn two onward
+ * (verify round 1). 2,000 sits comfortably above anything 300 tokens can emit
+ * while still bounding a hand-crafted payload.
+ */
+export const LYNQ_MAX_ASSISTANT_CHARS = 2000
 
 // ── Action tags ──────────────────────────────────────────────────────────────
 

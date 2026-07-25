@@ -178,7 +178,7 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     windowSeconds: 60,
     failureMode: 'open',
     rationale:
-      'Model spend per session. Bounded by credits too, so degrading open is not unbounded cost.',
+      'Model spend on a public anonymous route — nothing else bounds it (tool credits gate ai_tool, not this widget). Degrades open at the limiter so the widget stays answerable, but the ROUTE serves the zero-cost static fallback whenever the check is degraded: availability keeps, live model calls are never unmetered.',
   },
   ai_tool: {
     limit: 20,

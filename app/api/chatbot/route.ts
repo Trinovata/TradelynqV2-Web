@@ -33,6 +33,7 @@ import {
   LYNQ_FALLBACK,
   LYNQ_MAX_MESSAGES,
   LYNQ_MAX_INPUT_CHARS,
+  LYNQ_MAX_ASSISTANT_CHARS,
 } from '@/lib/chatbot/prompt'
 
 const MODEL = 'claude-sonnet-5'
@@ -40,13 +41,26 @@ const MAX_TOKENS = 300
 /** Only the last N messages are forwarded upstream — cost control, not context. */
 const HISTORY_WINDOW = 10
 
+/**
+ * The content cap is split by role (verify round 1). User turns carry the
+ * composer's 500-char limit; assistant turns are the model's OWN prior output
+ * echoed back as history — a live reply at `max_tokens` 300 routinely exceeds
+ * 500 chars, and a single cap made turn two of every live conversation 422
+ * and stay broken (the oversized reply never leaves the history).
+ */
 const bodySchema = z.object({
   messages: z
     .array(
-      z.object({
-        role: z.enum(['user', 'assistant']),
-        content: z.string().trim().min(1).max(LYNQ_MAX_INPUT_CHARS),
-      })
+      z.discriminatedUnion('role', [
+        z.object({
+          role: z.literal('user'),
+          content: z.string().trim().min(1).max(LYNQ_MAX_INPUT_CHARS),
+        }),
+        z.object({
+          role: z.literal('assistant'),
+          content: z.string().trim().min(1).max(LYNQ_MAX_ASSISTANT_CHARS),
+        }),
+      ])
     )
     .min(1)
     .max(LYNQ_MAX_MESSAGES),
@@ -134,6 +148,13 @@ export async function POST(request: Request) {
   // Env NAME from .env.example; the value is never read from any file.
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return fallbackResponse()
+
+  // The limiter degrades OPEN (public widget, availability wins) — but a
+  // degraded check means the limit was never verified, and this is the one
+  // route where an unverified limit is unmetered model spend per anonymous
+  // IP. So a degraded check answers with the zero-cost static fallback: the
+  // widget stays up, the wallet stays closed (verify round 1).
+  if (limit.degraded) return fallbackResponse()
 
   const recent = parsed.data.messages.slice(-HISTORY_WINDOW)
 
