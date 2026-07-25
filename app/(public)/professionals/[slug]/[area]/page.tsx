@@ -19,10 +19,10 @@ import { EmptyState } from '@/components/ui/States'
  */
 export const revalidate = 3600
 
-type Params = { category: string; area: string }
+type Params = { slug: string; area: string }
 
 async function resolve(params: Params) {
-  const category = await getChildCategory(params.category)
+  const category = await getChildCategory(params.slug)
   const area = AREA_BY_SLUG.get(params.area) ?? null
   return { category, area }
 }
