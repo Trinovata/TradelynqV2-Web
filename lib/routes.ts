@@ -74,6 +74,8 @@ export const PUBLIC_PREFIXES: readonly string[] = [
   '/pricing',
   '/for-professionals',
   '/guides',
+  '/customer-guide',
+  '/bundles',
   '/trust',
   '/faq',
   '/support',
