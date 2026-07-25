@@ -11,6 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:policies": "node scripts/test-policies.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:update": "playwright test --update-snapshots",
     "lint:lexicon": "node scripts/lint-lexicon.mjs",
     "verify": "npm run typecheck && npm run lint && npm run lint:lexicon && npm run format:check && npm run test && npm run test:policies",
     "db:reset": "supabase db reset",
@@ -58,6 +61,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
