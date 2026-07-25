@@ -63,6 +63,34 @@ test('storefront renders heading and action rail', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Request a quote' }).first()).toBeVisible()
 })
 
+test('Lynq widget answers through the streaming pipeline (S094)', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open chat with Lynq' }).click()
+  await expect(page.getByText(/I'm Lynq, your TradeLynq assistant/)).toBeVisible()
+
+  const replyPromise = page.waitForResponse('**/api/chatbot')
+  await page.getByRole('textbox', { name: 'Message Lynq' }).fill('What does TradeLynq cost?')
+  await page.keyboard.press('Enter')
+  const reply = await replyPromise
+  expect(reply.status()).toBe(200)
+
+  // The route reports which branch answered without any env value being read.
+  // Locally (no ANTHROPIC_API_KEY) this MUST be the static fallback — the
+  // verifiable path until S004 provisions a key; with a key configured the
+  // live stream renders instead, so assert a non-empty reply either way.
+  if (reply.headers()['x-lynq-mode'] === 'fallback') {
+    await expect(page.getByText(/I'm not fully set up yet — but I'd love to help/)).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Chat on WhatsApp' })).toBeVisible()
+  } else {
+    await expect
+      .poll(async () => {
+        const bubbles = await page.locator('[aria-live="polite"] p').allTextContents()
+        return bubbles.filter((text) => text.trim().length > 0).length
+      })
+      .toBeGreaterThanOrEqual(3) // greeting + user turn + assistant reply
+  }
+})
+
 test('invalid document token shows the one invalid state (deck §14.4)', async ({ page }) => {
   await page.goto('/q/not-a-real-token')
   // Copy asserted VERBATIM from copy-public.md §14.4 / components/shared/TokenInvalid.tsx.
