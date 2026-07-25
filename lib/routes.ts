@@ -76,6 +76,8 @@ export const PUBLIC_PREFIXES: readonly string[] = [
   '/guides',
   '/customer-guide',
   '/bundles',
+  '/about',
+  '/why-tradelynq',
   '/trust',
   '/faq',
   '/support',
