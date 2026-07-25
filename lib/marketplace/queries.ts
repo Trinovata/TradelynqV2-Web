@@ -9,6 +9,7 @@
  */
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   buildProfessionalCardData,
   type ProfessionalCardData,
@@ -302,11 +303,11 @@ export type ViewerGateState = {
  * customer. Returns null when nobody is signed in.
  *
  * The customer's own `connections` rows are RLS-visible, so the pair check runs
- * on the RLS client. The contact columns are selected ONLY once the pair row is
- * confirmed, and by explicit column list — `authenticated` has table-wide
- * SELECT on active rows, so redaction IS the column list (migration
- * 20260719000005: "Redaction is the API's job … anything reading this table
- * directly for a public surface MUST select an explicit column list").
+ * on the RLS client — that check IS the gate. The contact columns are read ONLY
+ * once the pair row is confirmed, and via the admin client: since migration
+ * 20260724000001 `authenticated` holds a column allow-list that withholds the
+ * contact fields entirely, so redaction is the grant and this post-gate read is
+ * the one sanctioned path.
  *
  * For a non-customer viewer (a professional browsing a peer) the
  * customer_profiles lookup returns nothing and the state degrades to the
@@ -337,7 +338,10 @@ export async function getViewerGateState(professionalId: string): Promise<Viewer
 
   let contact: StorefrontContact | null = null
   if (revealed) {
-    const { data: pro } = await supabase
+    // Post-gate read. The RLS pair check above is the gate; the admin client is
+    // used only because the column grant (20260724000001) withholds contact
+    // fields from `authenticated` — never call this without `revealed`.
+    const { data: pro } = await createAdminClient()
       .from('professional_profiles')
       .select('contact_phone, contact_whatsapp')
       .eq('id', professionalId)

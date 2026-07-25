@@ -41,6 +41,7 @@ import {
   CUSTOMER_CONTACT_LEGAL,
 } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import { logActivity, flushAnalytics } from '@/lib/analytics/server'
@@ -186,9 +187,10 @@ export async function POST(request: Request) {
     .maybeSingle()
   const connectionCount = profile?.connection_count ?? 0
 
-  // 8. The contact — selected by explicit column list ONLY now the connection
-  // row exists (D13: redaction is the column list, migration 20260719000005).
-  const { data: contactRow, error: contactError } = await ctx.supabase
+  // 8. The contact — read ONLY now the connection row exists (D13: redaction is
+  // the column grant, migration 20260724000001 — `authenticated` cannot select
+  // contact columns at all, so this post-gate read uses the admin client).
+  const { data: contactRow, error: contactError } = await createAdminClient()
     .from('professional_profiles')
     .select('contact_phone, contact_whatsapp')
     .eq('id', professional_id)
