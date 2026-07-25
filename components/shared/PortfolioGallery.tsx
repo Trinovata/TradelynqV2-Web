@@ -113,6 +113,7 @@ export function PortfolioGallery({ images, name }: Props) {
       >
         {open !== null && (
           <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element -- user upload URLs are arbitrary; next/image remote config cannot enumerate them */}
             <img
               src={images[open]}
               alt={`Portfolio image ${open + 1} — ${name}`}
