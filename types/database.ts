@@ -3298,6 +3298,13 @@ export type Database = {
           status: Database["public"]["Enums"]["enquiry_status"]
         }[]
       }
+      professional_response_stats: {
+        Args: { p_professional_id: string }
+        Returns: {
+          median_minutes: number
+          sample: number
+        }[]
+      }
       professional_subtypes: {
         Args: { p_user_ids: string[] }
         Returns: {

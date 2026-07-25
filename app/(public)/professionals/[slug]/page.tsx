@@ -11,17 +11,19 @@
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { MapPin, ShieldCheck, BadgeCheck } from 'lucide-react'
+import { MapPin, ShieldCheck, BadgeCheck, Clock } from 'lucide-react'
 import { getProfessionalBySlug, getViewerGateState } from '@/lib/marketplace/queries'
 import { isProfessionalSaved } from '@/lib/marketplace/saved'
 import { createClient } from '@/lib/supabase/server'
 import { SaveButton } from '@/components/shared/SaveButton'
+import { BusinessHours } from '@/components/shared/BusinessHours'
+import { PortfolioGallery } from '@/components/shared/PortfolioGallery'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
 import { ReviewCard, DistributionBar } from '@/components/shared/ReviewCard'
 import { EmptyState } from '@/components/ui/States'
-import { formatTTD } from '@/lib/utils/format'
+import { formatTTD, formatResponseTime } from '@/lib/utils/format'
 import { StorefrontActions } from './StorefrontActions'
 
 export async function generateMetadata({
@@ -159,6 +161,14 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
                 )}
                 {pro.track === 'registered' && <Badge variant="registered">Registered</Badge>}
                 {pro.track === 'student' && <Badge variant="student">Student</Badge>}
+                {/* RP2 (D57): median accepted-response over 90 days, rendered
+                    only at sample ≥ 5 — the query returns null below that. */}
+                {pro.responseTime && (
+                  <Badge variant="neutral">
+                    <Clock className="size-3.5" aria-hidden="true" />
+                    Usually responds in ~{formatResponseTime(pro.responseTime.medianMinutes)}
+                  </Badge>
+                )}
               </div>
             </div>
           </header>
@@ -196,6 +206,15 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
             </section>
           )}
 
+          {/* Portfolio (§3.4 section 4) — omitted entirely at zero images,
+              never an empty grid. */}
+          {pro.portfolio.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-foreground font-medium">Portfolio</h2>
+              <PortfolioGallery images={pro.portfolio} name={pro.name} />
+            </section>
+          )}
+
           {/* Reviews */}
           <section className="flex flex-col gap-4">
             <h2 className="text-foreground font-medium">Reviews</h2>
@@ -219,6 +238,14 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
               />
             )}
           </section>
+
+          {/* Business hours (§3.4 section 6) — Port of Spain time. */}
+          {pro.businessHours && (
+            <section className="flex flex-col gap-3">
+              <h2 className="text-foreground font-medium">Business hours</h2>
+              <BusinessHours hours={pro.businessHours} />
+            </section>
+          )}
         </div>
 
         {/* ── Sticky action rail (desktop) / bottom bar (mobile) ── */}
