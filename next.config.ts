@@ -196,6 +196,17 @@ const nextConfig: NextConfig = {
     return [{ source: '/(.*)', headers: SECURITY_HEADERS }]
   },
 
+  // The canonical-merge 301s (v2/03 §3.9–3.10): V1's audience-specific guide
+  // URLs collapse into their canonical pages. Permanent, so search equity
+  // transfers rather than splits.
+  async redirects() {
+    return [
+      { source: '/for-tradespeople', destination: '/for-professionals', permanent: true },
+      { source: '/for-customers', destination: '/customer-guide', permanent: true },
+      { source: '/homeowner-guide', destination: '/customer-guide', permanent: true },
+    ]
+  },
+
   images: {
     remotePatterns: [
       // Supabase Storage — professional portfolios, avatars, catalogue posts.
