@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/server'
 import { SaveButton } from '@/components/shared/SaveButton'
 import { BusinessHours } from '@/components/shared/BusinessHours'
 import { PortfolioGallery } from '@/components/shared/PortfolioGallery'
+import { BlurFade } from '@/components/ui/blur-fade'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs'
@@ -108,7 +109,9 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_320px]">
         {/* ── Main column ── */}
-        <div className="flex flex-col gap-8">
+        {/* The storefront settles in on load — one calm reveal so the shop
+            window feels considered, not assembled. */}
+        <BlurFade className="flex flex-col gap-8">
           {/* Identity header */}
           <header className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <Avatar
@@ -249,7 +252,7 @@ export default async function StorefrontPage({ params }: { params: Promise<{ slu
               <BusinessHours hours={pro.businessHours} />
             </section>
           )}
-        </div>
+        </BlurFade>
 
         {/* ── Sticky action rail (desktop) / bottom bar (mobile) ── */}
         <StorefrontActions
