@@ -4,6 +4,7 @@ import { requireCustomer } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
 import { CustomerNavLinks } from '@/components/customer/CustomerNavLinks'
 import { CustomerTabBar } from '@/components/customer/CustomerTabBar'
+import { Toaster } from '@/components/ui/Toast'
 
 /**
  * The customer portal shell (playbook S096, spec v2/04 §4.0).
@@ -38,6 +39,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
       </header>
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
       <CustomerTabBar />
+      <Toaster />
     </div>
   )
 }

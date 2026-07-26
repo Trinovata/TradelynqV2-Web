@@ -1,18 +1,13 @@
 import type { Metadata } from 'next'
-import { Heart } from 'lucide-react'
 import { getSavedProfessionals } from '@/lib/marketplace/saved'
-import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
-import { EmptyState } from '@/components/ui/States'
+import { SavedGrid } from './SavedGrid'
 
 /**
- * Saved professionals — /saved (playbook S084 landing surface; full S101 scope
- * later). Copy verbatim from copy-customer.md §9.
- *
- * This page exists now because the SaveButton success toast offers "View
- * saved" — an action must never land on a 404. The S101 close-out adds the
- * optimistic unsave-with-undo (order-restoring) and pagination past 24; until
- * then the card grid reads through the same CARD_COLUMNS path as search, so a
- * saved professional looks identical everywhere.
+ * Saved professionals — /saved (playbook S101, copy verbatim copy-customer.md
+ * §9). The grid reads through the same CARD_COLUMNS path as search, so a saved
+ * professional looks identical everywhere; SavedGrid adds the optimistic
+ * unsave-with-undo (order-restoring) the deck specifies. Pagination past 24 is
+ * still a follow-up — the current cap is generous for launch supply.
  */
 export const metadata: Metadata = { title: 'Saved Professionals' }
 
@@ -38,22 +33,7 @@ export default async function SavedPage() {
         </p>
       </header>
 
-      {n === 0 ? (
-        <EmptyState
-          icon={Heart}
-          heading="No saved professionals yet"
-          body="Browse professionals and tap the save button to keep track of your favourites."
-          action={{ label: 'Browse professionals', href: '/search' }}
-        />
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {professionals.map((pro, index) => (
-            <li key={pro.id}>
-              <ProfessionalCard data={pro} variant="grid" position={index + 1} source="saved" />
-            </li>
-          ))}
-        </ul>
-      )}
+      <SavedGrid initial={professionals} />
     </div>
   )
 }
