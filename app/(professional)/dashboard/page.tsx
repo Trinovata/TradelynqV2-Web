@@ -17,6 +17,8 @@ import { loginRedirect } from '@/lib/routes'
 import { getEnquiryInbox, type EnquiryRow } from '@/lib/enquiries/queries'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { BlurFade } from '@/components/ui/blur-fade'
+import { NumberTicker } from '@/components/shared/NumberTicker'
 import { formatRelativeTime, formatRating } from '@/lib/utils/format'
 import { cn } from '@/lib/utils/cn'
 import type { Enums } from '@/types/database'
@@ -119,50 +121,61 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-foreground font-display text-3xl tracking-tight">
-            {greeting()}, {firstName}
-          </h1>
-          <p className="text-muted mt-1 text-sm">
-            {pending.length > 0
-              ? `${pending.length} ${pending.length === 1 ? 'enquiry needs' : 'enquiries need'} your reply.`
-              : 'Everything is up to date. Nice work.'}
-          </p>
-        </div>
-        {storefrontHref && (
-          <Button asChild variant="secondary" size="sm">
-            <a href={storefrontHref} target="_blank" rel="noreferrer">
-              View storefront
-              <ArrowUpRight className="size-4" aria-hidden="true" />
-            </a>
-          </Button>
-        )}
-      </header>
+      {/* Orchestrated entrance: the surface assembles top-to-bottom in one
+          calm sweep (BlurFade with rising delays) rather than snapping in —
+          the premium page-load moment. Each block is one beat. */}
+      <BlurFade delay={0} className="mb-7">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-foreground font-display text-3xl tracking-tight">
+              {greeting()}, {firstName}
+            </h1>
+            <p className="text-muted mt-1 text-sm">
+              {pending.length > 0
+                ? `${pending.length} ${pending.length === 1 ? 'enquiry needs' : 'enquiries need'} your reply.`
+                : 'Everything is up to date. Nice work.'}
+            </p>
+          </div>
+          {storefrontHref && (
+            <Button asChild variant="secondary" size="sm">
+              <a href={storefrontHref} target="_blank" rel="noreferrer">
+                View storefront
+                <ArrowUpRight className="size-4" aria-hidden="true" />
+              </a>
+            </Button>
+          )}
+        </header>
+      </BlurFade>
 
-      {!setupComplete && <SetupGuide steps={steps} done={stepsDone} />}
+      {!setupComplete && (
+        <BlurFade delay={0.08}>
+          <SetupGuide steps={steps} done={stepsDone} />
+        </BlurFade>
+      )}
 
-      <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile
-          icon={Inbox}
-          label="New enquiries"
-          value={pending.length}
-          accent={pending.length > 0}
-        />
-        <StatTile icon={Briefcase} label="Active work" value={active.length} />
-        <StatTile
-          icon={CircleCheck}
-          label="Completed this month"
-          value={completedThisMonth.length}
-        />
-        <StatTile
-          icon={Star}
-          label={`Rating${profile?.review_count ? ` · ${profile.review_count}` : ''}`}
-          display={profile?.review_count ? formatRating(profile.average_rating) : '—'}
-        />
-      </section>
+      <BlurFade delay={0.14}>
+        <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatTile
+            icon={Inbox}
+            label="New enquiries"
+            value={pending.length}
+            accent={pending.length > 0}
+          />
+          <StatTile icon={Briefcase} label="Active work" value={active.length} />
+          <StatTile
+            icon={CircleCheck}
+            label="Completed this month"
+            value={completedThisMonth.length}
+          />
+          <StatTile
+            icon={Star}
+            label={`Rating${profile?.review_count ? ` · ${profile.review_count}` : ''}`}
+            display={profile?.review_count ? formatRating(profile.average_rating) : '—'}
+          />
+        </section>
+      </BlurFade>
 
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <BlurFade delay={0.2} className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <Panel title="Needs your attention" icon={ListChecks} count={pending.length}>
           {queue.length === 0 ? (
             <PanelEmpty
@@ -195,7 +208,7 @@ export default async function DashboardPage() {
             </ul>
           )}
         </Panel>
-      </div>
+      </BlurFade>
     </div>
   )
 }
@@ -216,16 +229,37 @@ function StatTile({
   accent?: boolean
 }) {
   return (
-    <div className="border-border bg-card rounded-[--radius-card] border p-4">
-      <div className="flex items-center gap-2">
-        <Icon
-          className={cn('size-4', accent ? 'text-accent-ink' : 'text-muted')}
+    <div
+      className={cn(
+        'group relative overflow-hidden rounded-[--radius-card] border p-4 transition-[transform,box-shadow,border-color] duration-200 ease-out',
+        'hover:-translate-y-0.5 hover:shadow-[0_8px_28px_-14px_rgb(16_22_31/0.28)]',
+        accent
+          ? 'border-accent/25 bg-accent-soft'
+          : 'border-border bg-card hover:border-foreground/15'
+      )}
+    >
+      {/* An active tile earns a quiet corner glow — the one place the eye is
+          drawn, only when there is something to act on. Pure token, no gradient
+          text, no side-stripe. */}
+      {accent && (
+        <span
           aria-hidden="true"
+          className="bg-accent/5 pointer-events-none absolute -top-8 -right-8 size-24 rounded-full blur-2xl"
         />
+      )}
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'flex size-7 items-center justify-center rounded-full',
+            accent ? 'bg-accent/10 text-accent-ink' : 'bg-card-subtle text-muted'
+          )}
+        >
+          <Icon className="size-4" aria-hidden="true" />
+        </span>
         <span className="text-muted truncate text-xs font-medium">{label}</span>
       </div>
-      <p className="text-foreground mt-2 font-mono text-2xl tabular-nums">
-        {display ?? value?.toLocaleString('en-TT')}
+      <p className="text-foreground mt-2.5 font-mono text-[1.75rem] leading-none tabular-nums">
+        {display ?? (typeof value === 'number' ? <NumberTicker value={value} /> : '—')}
       </p>
     </div>
   )
