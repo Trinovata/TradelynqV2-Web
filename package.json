@@ -19,7 +19,8 @@
     "db:reset": "supabase db reset",
     "db:seed": "node scripts/seed-dev.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "audit": "node scripts/audit-gate.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -67,7 +68,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
-    "eslint": "^9",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.2.10",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.1",
