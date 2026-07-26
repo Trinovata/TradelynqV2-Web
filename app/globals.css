@@ -203,11 +203,23 @@
   --font-display: var(--font-bricolage), var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Radius law — nested is always parent minus gap, never equal. */
-  --radius-tag: 4px;
-  --radius-control: 8px;
-  --radius-card: 12px;
-  --radius-panel: 16px;
+  /* Radius law — nested is always parent minus gap, never equal.
+     Softened 26 Jul 2026 for a more premium, modern feel (research: Linear /
+     Stripe / Vercel sit ~10–18px). Token-driven, so all 44 surfaces lift at
+     once — never hand-tuned per component. */
+  --radius-tag: 6px;
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-panel: 18px;
+
+  /* Elevation scale — the premium gap the system was missing. Shadows are
+     TINTED with the brand navy (16 22 31), never pure black (color research:
+     tint toward the brand hue, black never appears in nature), and layered
+     (a tight contact shadow + a soft ambient one) the way real light falls.
+     e1 resting card · e2 hover/raised · e3 popover/modal. */
+  --shadow-e1: 0 1px 2px -1px rgb(16 22 31 / 0.06), 0 2px 6px -2px rgb(16 22 31 / 0.08);
+  --shadow-e2: 0 2px 4px -2px rgb(16 22 31 / 0.08), 0 10px 28px -14px rgb(16 22 31 / 0.24);
+  --shadow-e3: 0 4px 8px -4px rgb(16 22 31 / 0.1), 0 20px 48px -20px rgb(16 22 31 / 0.32);
 
   /* Type scale, T2: display weights 500–600, sizes +10%, tighter leading. */
   --text-display-2xl: clamp(2.75rem, 6.5vw, 4.125rem);

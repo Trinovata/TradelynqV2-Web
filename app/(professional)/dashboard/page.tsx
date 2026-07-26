@@ -232,7 +232,7 @@ function StatTile({
     <div
       className={cn(
         'group relative overflow-hidden rounded-[--radius-card] border p-4 transition-[transform,box-shadow,border-color] duration-200 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-[0_8px_28px_-14px_rgb(16_22_31/0.28)]',
+        'hover:shadow-e2 hover:-translate-y-0.5',
         accent
           ? 'border-accent/25 bg-accent-soft'
           : 'border-border bg-card hover:border-foreground/15'

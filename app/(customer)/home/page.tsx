@@ -8,6 +8,7 @@ import { getCustomerEnquiries } from '@/lib/enquiries/queries'
 import { getSavedProfessionalIds } from '@/lib/marketplace/saved'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { BlurFade } from '@/components/ui/blur-fade'
 
 export const metadata: Metadata = {
   title: 'Home',
@@ -48,33 +49,44 @@ export default async function CustomerHomePage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-8">
-        <h1 className="text-foreground font-display text-3xl tracking-tight">
-          Welcome, {firstName}
-        </h1>
-        <p className="text-muted mt-2 max-w-prose text-sm">
-          Describe what you need done and reach verified professionals across Trinidad &amp; Tobago
-          — free, straight on WhatsApp.
-        </p>
-      </header>
+      {/* Orchestrated entrance — the portal assembles in one calm sweep. */}
+      <BlurFade delay={0} className="mb-8">
+        <header>
+          <h1 className="text-foreground font-display text-3xl tracking-tight">
+            Welcome, {firstName}
+          </h1>
+          <p className="text-muted mt-2 max-w-prose text-sm">
+            Describe what you need done and reach verified professionals across Trinidad &amp;
+            Tobago — free, straight on WhatsApp.
+          </p>
+        </header>
+      </BlurFade>
 
-      <section className="border-border bg-card rounded-[--radius-card] border p-6 sm:p-8">
-        <div className="flex flex-col items-start gap-4">
-          <span className="bg-accent-soft flex size-11 items-center justify-center rounded-[--radius-control]">
-            <Search className="text-accent-ink size-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="text-foreground text-lg font-medium">Find someone for the job</h2>
-            <p className="text-muted mt-1 max-w-md text-sm">
-              Plumbing, beauty, tutoring, repairs — search by what you need and compare
-              professionals by their reviews.
-            </p>
+      <BlurFade delay={0.08}>
+        <section className="border-border bg-card relative isolate overflow-hidden rounded-[--radius-card] border p-6 sm:p-8">
+          {/* A quiet accent wash in the corner gives the primary action card
+              depth without a gradient — one soft token-tinted glow. */}
+          <span
+            aria-hidden="true"
+            className="bg-accent/5 pointer-events-none absolute -top-10 -right-10 size-40 rounded-full blur-3xl"
+          />
+          <div className="flex flex-col items-start gap-4">
+            <span className="bg-accent-soft flex size-11 items-center justify-center rounded-[--radius-control]">
+              <Search className="text-accent-ink size-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-foreground text-lg font-medium">Find someone for the job</h2>
+              <p className="text-muted mt-1 max-w-md text-sm">
+                Plumbing, beauty, tutoring, repairs — search by what you need and compare
+                professionals by their reviews.
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/search">Start a search</Link>
+            </Button>
           </div>
-          <Button asChild>
-            <Link href="/search">Start a search</Link>
-          </Button>
-        </div>
-      </section>
+        </section>
+      </BlurFade>
 
       {toReview.length > 0 && (
         <section className="border-success/30 bg-success/5 mt-6 rounded-[--radius-card] border p-5">
@@ -99,38 +111,40 @@ export default async function CustomerHomePage() {
       )}
 
       {active.length > 0 && (
-        <section className="mt-6">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-foreground font-medium">Active enquiries</h2>
-            <Link
-              href="/home/enquiries"
-              className="text-body hover:text-foreground text-sm transition-colors"
-            >
-              View all
-            </Link>
-          </div>
-          <ul className="flex flex-col gap-2">
-            {active.slice(0, 4).map((e) => (
-              <li key={e.id}>
-                <Link
-                  href={`/home/enquiries/${e.id}`}
-                  className="border-border bg-card hover:border-accent/30 flex items-center justify-between gap-3 rounded-[--radius-card] border p-4 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-foreground truncate text-sm font-medium">
-                      {e.professional?.business_name ?? 'A professional'}
-                    </p>
-                    <p className="text-muted mt-0.5 line-clamp-1 text-xs">{e.description}</p>
-                  </div>
-                  <Badge status={e.status}>{STATUS_LABEL[e.status] ?? e.status}</Badge>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <BlurFade delay={0.14}>
+          <section className="mt-6">
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="text-foreground font-medium">Active enquiries</h2>
+              <Link
+                href="/home/enquiries"
+                className="text-body hover:text-foreground text-sm transition-colors"
+              >
+                View all
+              </Link>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {active.slice(0, 4).map((e) => (
+                <li key={e.id}>
+                  <Link
+                    href={`/home/enquiries/${e.id}`}
+                    className="border-border bg-card hover:border-accent/30 hover:shadow-e2 flex items-center justify-between gap-3 rounded-[--radius-card] border p-4 transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-foreground truncate text-sm font-medium">
+                        {e.professional?.business_name ?? 'A professional'}
+                      </p>
+                      <p className="text-muted mt-0.5 line-clamp-1 text-xs">{e.description}</p>
+                    </div>
+                    <Badge status={e.status}>{STATUS_LABEL[e.status] ?? e.status}</Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </BlurFade>
       )}
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2">
+      <BlurFade delay={0.2} className="mt-6 grid gap-4 sm:grid-cols-2">
         <SignpostCard
           icon={MessageCircle}
           title="Your enquiries"
@@ -151,12 +165,14 @@ export default async function CustomerHomePage() {
           }
           href="/saved"
         />
-      </section>
+      </BlurFade>
 
-      <p className="text-muted mt-8 flex items-center gap-2 text-xs">
-        <ShieldCheck className="text-success size-4" aria-hidden="true" />
-        Every professional is identity-checked and every review is moderated.
-      </p>
+      <BlurFade delay={0.26}>
+        <p className="text-muted mt-8 flex items-center gap-2 text-xs">
+          <ShieldCheck className="text-success size-4" aria-hidden="true" />
+          Every professional is identity-checked and every review is moderated.
+        </p>
+      </BlurFade>
     </div>
   )
 }
@@ -174,14 +190,20 @@ function SignpostCard({
 }) {
   const inner = (
     <>
-      <Icon className="text-muted size-5" aria-hidden="true" />
+      <span className="bg-card-subtle text-muted group-hover:bg-accent-soft group-hover:text-accent-ink flex size-9 items-center justify-center rounded-full transition-colors">
+        <Icon className="size-4.5" aria-hidden="true" />
+      </span>
       <h3 className="text-foreground mt-3 font-medium">{title}</h3>
       <p className="text-muted mt-1 text-sm text-pretty">{body}</p>
     </>
   )
-  const className = 'border-border bg-card block rounded-[--radius-card] border p-5'
+  const className =
+    'group border-border bg-card block rounded-[--radius-card] border p-5 transition-[transform,border-color,box-shadow] duration-200 ease-out'
   return href ? (
-    <Link href={href} className={`${className} hover:border-accent/30 transition-colors`}>
+    <Link
+      href={href}
+      className={`${className} hover:border-accent/30 hover:shadow-e2 hover:-translate-y-0.5`}
+    >
       {inner}
     </Link>
   ) : (
