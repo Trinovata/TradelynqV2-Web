@@ -16,6 +16,7 @@ import { requireProfessional } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
+import { emitEvent } from '@/lib/events/emit'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tradelynq.tech'
 
@@ -33,7 +34,7 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     .update({ status: 'sent', sent_at: new Date().toISOString() })
     .eq('id', id)
     .eq('status', 'draft')
-    .select('id, public_token')
+    .select('id, public_token, customer_name, total_ttd, sent_at')
     .maybeSingle()
 
   if (error) {
@@ -53,11 +54,24 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   // TODO(S135): fire the customer email + WhatsApp share through the dispatcher.
   logger.info('quote:sent', { quoteId: sent.id })
 
+  const customerLink = `${SITE_URL}/q/${sent.public_token}`
+  emitEvent(access.professionalId, {
+    type: 'quote.sent',
+    data: {
+      quote_id: sent.id,
+      customer_name: sent.customer_name,
+      amount_ttd: sent.total_ttd,
+      currency: 'TTD',
+      public_url: customerLink,
+      sent_at: sent.sent_at ?? new Date().toISOString(),
+    },
+  })
+
   return ok({
     quote: {
       id: sent.id,
       status: 'sent',
-      customer_link: `${SITE_URL}/q/${sent.public_token}`,
+      customer_link: customerLink,
     },
   })
 }

@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { requireProfessional } from '@/lib/access/api'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
+import { emitEvent } from '@/lib/events/emit'
 import type { Enums } from '@/types/database'
 
 type Status = Enums<'job_status'>
@@ -52,7 +53,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     .update({ status: t.to })
     .eq('id', id)
     .in('status', t.from)
-    .select('id, status')
+    .select('id, status, customer_name, service_description, in_progress_at, completed_at')
     .maybeSingle()
 
   if (error) {
@@ -64,6 +65,31 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
       resource: 'job',
       currentState: 'unexpected',
       attemptedTransition: parsed.data.action,
+    })
+  }
+
+  // The transition is committed; announce it (best-effort, post-response — see
+  // emitEvent). Reopen carries no event: it is a correction, not a milestone a
+  // downstream workflow should act on.
+  if (parsed.data.action === 'start') {
+    emitEvent(access.professionalId, {
+      type: 'job.started',
+      data: {
+        job_id: data.id,
+        customer_name: data.customer_name,
+        title: data.service_description,
+        started_at: data.in_progress_at ?? new Date().toISOString(),
+      },
+    })
+  } else if (parsed.data.action === 'complete') {
+    emitEvent(access.professionalId, {
+      type: 'job.completed',
+      data: {
+        job_id: data.id,
+        customer_name: data.customer_name,
+        title: data.service_description,
+        completed_at: data.completed_at ?? new Date().toISOString(),
+      },
     })
   }
 

@@ -121,5 +121,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   // accepted / declined (with the polite suggest-others message) / completed.
   logger.info('enquiry:transition', { enquiryId: id, action, to: move.to })
 
+  // NOTE(S116): `enquiry.accepted` is defined in the event catalog but not yet
+  // emitted here — job_enquiries stores customer_id, not a denormalised name, so
+  // a useful payload needs the profile join the inbox query uses. Wire it with
+  // that join rather than shipping a nameless event. The money/work-flow events
+  // (quote.sent, job.started/completed, invoice.created) are already live.
+
   return ok({ enquiry: updated })
 }

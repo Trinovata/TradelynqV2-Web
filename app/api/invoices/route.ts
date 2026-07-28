@@ -20,6 +20,7 @@ import { requireProfessional } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
+import { emitEvent } from '@/lib/events/emit'
 import { lineItemSchema, computeQuoteTotals } from '@/lib/quotes'
 
 const bodySchema = z.object({
@@ -80,13 +81,26 @@ export async function POST(request: Request) {
   const { data: created, error } = await access.supabase
     .from('invoices')
     .insert(insertPayload as never)
-    .select('id, invoice_number, public_token, total_ttd')
+    .select('id, invoice_number, public_token, total_ttd, created_at')
     .single()
 
   if (error || !created) {
     logger.error('invoice:create_failed', { code: error?.code })
     return err('INTERNAL')
   }
+
+  emitEvent(access.professionalId, {
+    type: 'invoice.created',
+    data: {
+      invoice_id: created.id,
+      invoice_number: created.invoice_number,
+      customer_name: body.customer_name,
+      amount_ttd: created.total_ttd,
+      currency: 'TTD',
+      due_date: body.due_date || null,
+      created_at: created.created_at,
+    },
+  })
 
   return ok({
     invoice: {
