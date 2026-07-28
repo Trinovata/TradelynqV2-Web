@@ -3276,6 +3276,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_webhook_failure: {
+        Args: { p_config_id: string; p_threshold?: number }
+        Returns: number
+      }
       claim_pioneer_place: {
         Args: { p_category_id: string; p_total_cap?: number }
         Returns: Json
@@ -3361,6 +3365,7 @@ export type Database = {
         Args: { p_email?: string; p_message: string; p_name?: string }
         Returns: undefined
       }
+      test_dblink_conninfo: { Args: never; Returns: string }
       unique_slug: {
         Args: {
           base_text: string

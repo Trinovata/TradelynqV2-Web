@@ -33,6 +33,7 @@ const patchSchema = z
       .trim()
       .url()
       .refine((u) => u.startsWith('https://'), { message: 'Endpoint URL must use HTTPS.' })
+      .refine((u) => u.length <= 2000, { message: 'Endpoint URL is too long.' })
       .optional(),
     events: z
       .array(z.enum(EVENT_TYPES))

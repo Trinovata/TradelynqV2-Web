@@ -30,12 +30,19 @@ const BACKOFF_MS = [0, 500, 2000] as const
 const REQUEST_TIMEOUT_MS = 10_000
 const AUTO_DISABLE_THRESHOLD = 5
 const RESPONSE_EXCERPT_LIMIT = 500
+// Cap simultaneous outbound deliveries per event so a professional with many
+// endpoints cannot make one event hold an unbounded number of open sockets (and
+// the whole fan-out finish inside the function's post-response budget).
+const MAX_CONCURRENT_DELIVERIES = 5
+// Never buffer more than this from an endpoint's response — a hostile endpoint
+// could otherwise stream gigabytes and OOM the invocation. Comfortably covers the
+// 500-char excerpt after UTF-8 decode.
+const MAX_RESPONSE_BYTES = RESPONSE_EXCERPT_LIMIT * 8
 
 type ConfigRow = {
   id: string
   url: string
   secret_encrypted: string
-  consecutive_failures: number
 }
 
 /**
@@ -49,7 +56,7 @@ export async function dispatchEvent(envelope: EventEnvelope): Promise<void> {
 
   const { data: configs, error } = await admin
     .from('webhook_configs')
-    .select('id, url, secret_encrypted, consecutive_failures')
+    .select('id, url, secret_encrypted')
     .eq('professional_id', envelope.professional_id)
     .eq('is_active', true)
     .is('disabled_at', null)
@@ -69,9 +76,31 @@ export async function dispatchEvent(envelope: EventEnvelope): Promise<void> {
   // matches what leaves the wire, and reuse it across endpoints.
   const rawBody = JSON.stringify(envelope)
 
-  await Promise.allSettled(
-    configs.map((config) => deliverToEndpoint(admin, config as ConfigRow, envelope, rawBody))
+  await mapWithConcurrency(configs as ConfigRow[], MAX_CONCURRENT_DELIVERIES, (config) =>
+    deliverToEndpoint(admin, config, envelope, rawBody)
   )
+}
+
+/**
+ * Run `fn` over `items` with at most `limit` in flight at once. A worker that
+ * throws does not stop its peers (each call is isolated) — the equivalent of
+ * Promise.allSettled, but bounded so a large fan-out cannot open N sockets at
+ * once.
+ */
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  let cursor = 0
+  const runNext = async (): Promise<void> => {
+    while (cursor < items.length) {
+      const item = items[cursor++]
+      if (item === undefined) continue
+      await fn(item).catch(() => {})
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runNext))
 }
 
 async function deliverToEndpoint(
@@ -215,16 +244,14 @@ async function applyDeliveryOutcome(
     return
   }
 
-  const failures = config.consecutive_failures + 1
-  const update: Record<string, unknown> = { consecutive_failures: failures }
-  if (failures >= AUTO_DISABLE_THRESHOLD) {
-    update.disabled_at = new Date().toISOString()
-    update.disabled_reason = `Auto-disabled after ${failures} consecutive delivery failures.`
-  }
-  const { error } = await admin
-    .from('webhook_configs')
-    .update(update as never)
-    .eq('id', config.id)
+  // Atomic in-DB increment + threshold check under the row lock (bump_webhook_
+  // failure RPC). An app-side read-modify-write here loses concurrent increments
+  // and can false-disable a healthy endpoint when a stale failure lands after a
+  // success reset — deliveries to one endpoint run concurrently via after().
+  const { error } = await admin.rpc('bump_webhook_failure', {
+    p_config_id: config.id,
+    p_threshold: AUTO_DISABLE_THRESHOLD,
+  })
   if (error) logger.error('webhook:bump_streak_failed', { configId: config.id, code: error.code })
 }
 
@@ -255,7 +282,7 @@ export async function sendTestPing(configId: string, professionalId: string): Pr
 
   const { data: config, error } = await admin
     .from('webhook_configs')
-    .select('id, url, secret_encrypted, consecutive_failures')
+    .select('id, url, secret_encrypted')
     .eq('id', configId)
     .eq('professional_id', professionalId)
     .maybeSingle()
@@ -308,9 +335,31 @@ export async function sendTestPing(configId: string, professionalId: string): Pr
   }
 }
 
+/**
+ * Read at most MAX_RESPONSE_BYTES from the response, then cancel the stream. The
+ * excerpt is only ever a 500-char diagnostic, so there is no reason to buffer a
+ * whole body — and doing so lets a hostile endpoint stream gigabytes and OOM the
+ * invocation (which shares its instance with live user requests under `after()`).
+ */
 async function safeReadBody(response: Response): Promise<string> {
   try {
-    return await response.text()
+    const body = response.body
+    if (!body) return ''
+    const reader = body.getReader()
+    const decoder = new TextDecoder()
+    let out = ''
+    let total = 0
+    while (total < MAX_RESPONSE_BYTES) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (value) {
+        total += value.byteLength
+        out += decoder.decode(value, { stream: true })
+      }
+    }
+    out += decoder.decode()
+    await reader.cancel().catch(() => {})
+    return out
   } catch {
     return ''
   }

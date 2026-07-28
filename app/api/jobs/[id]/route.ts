@@ -9,6 +9,7 @@
  */
 import { z } from 'zod'
 import { requireProfessional } from '@/lib/access/api'
+import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import { emitEvent } from '@/lib/events/emit'
@@ -30,6 +31,11 @@ const TRANSITIONS: Record<Action, { from: Status[]; to: Status }> = {
 const bodySchema = z.object({ action: z.enum(ACTIONS) })
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
+  // Rate-limit first (route-order law): this route emits webhook events, so an
+  // unthrottled complete/reopen loop would be a dispatch trigger.
+  const limit = await checkRateLimit('api', identifierFrom(request))
+  if (!limit.ok) return limit.response
+
   const access = await requireProfessional(request)
   if (!access.ok) return access.response
 

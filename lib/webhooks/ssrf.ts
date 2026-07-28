@@ -119,14 +119,20 @@ function isPublicIPv6(ip: string): boolean {
 
   if (addr === '::1' || addr === '::') return false // loopback / unspecified
 
-  // IPv4-mapped (::ffff:a.b.c.d and the hex ::ffff:h:h form): unwrap or reject —
-  // it must never smuggle a private v4 past the v6 checks.
-  if (addr.startsWith('::ffff:')) {
-    const dotted = addr.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+  // Any IPv6 that EMBEDS an IPv4 address must be judged by that v4, or it becomes
+  // an SSRF bypass. Three forms carry a v4: `::ffff:<v4>` (mapped), `::<v4>`
+  // (deprecated IPv4-compatible), and `64:ff9b::<v4>` (NAT64). All start with
+  // `::` or the NAT64 prefix; a dotted tail is the v4 to unwrap and defer to the
+  // v4 classifier. A `::`-prefixed or NAT64 address WITHOUT a dotted tail carries
+  // its v4 in hex (or is another special-use range) — too varied to parse safely,
+  // so reject it outright rather than risk letting a private target through.
+  if (addr.startsWith('::') || addr.startsWith('64:ff9b:')) {
+    const dotted = addr.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)
     return dotted ? isPublicIPv4(dotted[1]!) : false
   }
 
   const firstHextet = addr.split(':')[0] ?? ''
+  if (firstHextet === '') return false // any other zero-prefixed special range
   if (firstHextet.startsWith('fc') || firstHextet.startsWith('fd')) return false // ULA fc00::/7
   if (/^fe[89ab]/.test(firstHextet)) return false // link-local fe80::/10
   if (firstHextet.startsWith('ff')) return false // multicast ff00::/8

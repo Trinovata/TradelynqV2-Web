@@ -25,6 +25,11 @@ import { checkPublicUrl } from '@/lib/webhooks/ssrf'
 const LIST_COLUMNS =
   'id, url, events, is_active, consecutive_failures, disabled_at, disabled_reason, last_success_at, created_at'
 
+// A ceiling per professional. Generous for any real integration, but it bounds
+// the fan-out of a single event (and the socket cost of dispatch) so no account
+// can register hundreds of endpoints and turn one event into a delivery storm.
+const MAX_ENDPOINTS_PER_PROFESSIONAL = 20
+
 const createSchema = z.object({
   url: z
     .string()
@@ -92,6 +97,27 @@ export async function POST(request: Request) {
   const urlCheck = await checkPublicUrl(parsed.data.url)
   if (!urlCheck.ok) {
     return err('INVALID_INPUT', { fieldErrors: { url: [urlCheck.reason] }, formErrors: [] })
+  }
+
+  // Enforce the per-professional ceiling before creating another endpoint.
+  const { count, error: countError } = await access.supabase
+    .from('webhook_configs')
+    .select('id', { count: 'exact', head: true })
+    .eq('professional_id', access.professionalId)
+  if (countError) {
+    logger.error('webhook:count_failed', {
+      professionalId: access.professionalId,
+      code: countError.code,
+    })
+    return err('INTERNAL')
+  }
+  if ((count ?? 0) >= MAX_ENDPOINTS_PER_PROFESSIONAL) {
+    return err('INVALID_INPUT', {
+      fieldErrors: {},
+      formErrors: [
+        `You have reached the maximum of ${MAX_ENDPOINTS_PER_PROFESSIONAL} endpoints. Delete one to add another.`,
+      ],
+    })
   }
 
   // Generated once, returned once, stored encrypted. The plaintext exists only in

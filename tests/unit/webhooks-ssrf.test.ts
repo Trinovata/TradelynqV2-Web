@@ -51,6 +51,18 @@ describe('SSRF address classifier', () => {
     expect(isPublicAddress('::ffff:8.8.8.8')).toBe(true)
   })
 
+  it('rejects NAT64 and IPv4-compatible embeddings of private v4', () => {
+    // NAT64 64:ff9b::/96 embedding metadata / private v4.
+    expect(isPublicAddress('64:ff9b::a9fe:a9fe')).toBe(false) // hex form → conservative reject
+    expect(isPublicAddress('64:ff9b::169.254.169.254')).toBe(false)
+    expect(isPublicAddress('64:ff9b::10.0.0.1')).toBe(false)
+    // Deprecated IPv4-compatible ::a.b.c.d and hex ::h:h forms.
+    expect(isPublicAddress('::127.0.0.1')).toBe(false)
+    expect(isPublicAddress('::7f00:1')).toBe(false) // hex 127.0.0.1 → conservative reject
+    // A NAT64-wrapped PUBLIC v4 is still allowed by its v4.
+    expect(isPublicAddress('64:ff9b::8.8.8.8')).toBe(true)
+  })
+
   it('rejects unparseable input', () => {
     for (const bad of ['', 'not-an-ip', 'localhost', '999.999.999.999', '10.0.0']) {
       expect(isPublicAddress(bad), bad).toBe(false)
