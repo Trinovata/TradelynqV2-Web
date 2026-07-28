@@ -19,6 +19,7 @@ import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import { EVENT_TYPES } from '@/lib/events/catalog'
 import { encryptSecret, generateSigningSecret } from '@/lib/webhooks/crypto'
+import { checkPublicUrl } from '@/lib/webhooks/ssrf'
 
 /** Public-facing columns — everything except the secret ciphertext. */
 const LIST_COLUMNS =
@@ -82,6 +83,15 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     const flat = parsed.error.flatten()
     return err('INVALID_INPUT', { fieldErrors: flat.fieldErrors, formErrors: flat.formErrors })
+  }
+
+  // SSRF guard at config time: reject a URL that resolves to a private, loopback,
+  // or metadata address before it is ever stored. The dispatch-time re-check is
+  // the real boundary (DNS is mutable), but rejecting here gives an immediate,
+  // clear error instead of a silently-dead endpoint.
+  const urlCheck = await checkPublicUrl(parsed.data.url)
+  if (!urlCheck.ok) {
+    return err('INVALID_INPUT', { fieldErrors: { url: [urlCheck.reason] }, formErrors: [] })
   }
 
   // Generated once, returned once, stored encrypted. The plaintext exists only in

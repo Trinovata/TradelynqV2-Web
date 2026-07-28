@@ -21,6 +21,7 @@ import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EVENT_TYPES } from '@/lib/events/catalog'
+import { checkPublicUrl } from '@/lib/webhooks/ssrf'
 
 const LIST_COLUMNS =
   'id, url, events, is_active, consecutive_failures, disabled_at, disabled_reason, last_success_at, created_at'
@@ -63,6 +64,15 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
   if (!parsed.success) {
     const flat = parsed.error.flatten()
     return err('INVALID_INPUT', { fieldErrors: flat.fieldErrors, formErrors: flat.formErrors })
+  }
+
+  // A changed URL is re-validated against the SSRF guard — an edit is as much a
+  // way to point at an internal address as a create.
+  if (parsed.data.url !== undefined) {
+    const urlCheck = await checkPublicUrl(parsed.data.url)
+    if (!urlCheck.ok) {
+      return err('INVALID_INPUT', { fieldErrors: { url: [urlCheck.reason] }, formErrors: [] })
+    }
   }
 
   const { id } = await ctx.params

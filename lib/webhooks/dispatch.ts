@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logger } from '@/lib/utils/logger'
 import { decryptSecret, signPayload } from '@/lib/webhooks/crypto'
+import { checkPublicUrl } from '@/lib/webhooks/ssrf'
 import type { EventEnvelope } from '@/lib/events/catalog'
 
 /**
@@ -79,6 +80,21 @@ async function deliverToEndpoint(
   envelope: EventEnvelope,
   rawBody: string
 ): Promise<void> {
+  // SSRF boundary (re-checked here, not just at config time): DNS is mutable, so
+  // a hostname that was public when the endpoint was created may now resolve to a
+  // private or metadata address. Never fetch a URL that fails the guard NOW.
+  const guard = await checkPublicUrl(config.url)
+  if (!guard.ok) {
+    logger.error('webhook:blocked_non_public_url', { configId: config.id })
+    await recordAttempt(admin, config, envelope, {
+      succeeded: false,
+      attempt: 1,
+      error: 'blocked_non_public_url',
+    })
+    await applyDeliveryOutcome(admin, config, false)
+    return
+  }
+
   let secret: string
   try {
     secret = decryptSecret(config.secret_encrypted)
@@ -257,6 +273,20 @@ export async function sendTestPing(configId: string, professionalId: string): Pr
     data: { message: 'This is a test delivery from TradeLynq.', sent_at: new Date().toISOString() },
   }
   const rawBody = JSON.stringify(envelope)
+
+  // SSRF boundary. The test path is the most abusable — a synchronous fetch to an
+  // arbitrary host on demand — so it must clear the same guard as real delivery.
+  const guard = await checkPublicUrl(config.url)
+  if (!guard.ok) {
+    logger.error('webhook:test_blocked_non_public_url', { configId })
+    await recordAttempt(admin, config as ConfigRow, envelope, {
+      succeeded: false,
+      attempt: 1,
+      error: 'blocked_non_public_url',
+    })
+    await applyDeliveryOutcome(admin, config as ConfigRow, false)
+    return { succeeded: false, error: 'blocked_non_public_url' }
+  }
 
   let signature: string
   try {
