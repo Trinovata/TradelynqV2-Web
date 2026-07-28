@@ -53,7 +53,7 @@ export function WorkspaceSidebar({
       <div className="p-3">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 rounded-[--radius-control] px-2 py-2 transition-colors hover:bg-sidebar-hover"
+          className="hover:bg-sidebar-hover flex items-center gap-3 rounded-[--radius-control] px-2 py-2 transition-colors"
         >
           <Avatar
             src={workspace.avatarUrl}
@@ -92,7 +92,7 @@ export function WorkspaceSidebar({
                         'group relative flex items-center gap-3 rounded-[--radius-control] px-2.5 py-2 text-sm transition-[background-color,color] duration-150',
                         active
                           ? 'bg-sidebar-active font-medium text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]'
-                          : 'text-white/60 hover:bg-sidebar-hover hover:text-white/90'
+                          : 'hover:bg-sidebar-hover text-white/60 hover:text-white/90'
                       )}
                     >
                       <item.icon
@@ -122,7 +122,7 @@ export function WorkspaceSidebar({
             href={workspace.storefrontHref}
             target="_blank"
             rel="noreferrer"
-            className="mb-1 flex items-center gap-2 rounded-[--radius-control] px-2.5 py-2 text-sm text-white/55 transition-colors hover:bg-sidebar-hover hover:text-white/85"
+            className="hover:bg-sidebar-hover mb-1 flex items-center gap-2 rounded-[--radius-control] px-2.5 py-2 text-sm text-white/55 transition-colors hover:text-white/85"
           >
             <ExternalLink className="size-4 text-white/45" aria-hidden="true" />
             View storefront
@@ -130,7 +130,7 @@ export function WorkspaceSidebar({
         )}
         <Link
           href="/credits"
-          className="flex items-center justify-between rounded-[--radius-control] px-2.5 py-2 text-sm transition-colors hover:bg-sidebar-hover"
+          className="hover:bg-sidebar-hover flex items-center justify-between rounded-[--radius-control] px-2.5 py-2 text-sm transition-colors"
         >
           <span className="text-white/55">Credits</span>
           <span className="font-mono text-sm font-medium text-white/90 tabular-nums">
@@ -141,7 +141,7 @@ export function WorkspaceSidebar({
           href={SUPPORT_WHATSAPP}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 rounded-[--radius-control] px-2.5 py-2 text-sm text-white/55 transition-colors hover:bg-sidebar-hover hover:text-white/85"
+          className="hover:bg-sidebar-hover flex items-center gap-2 rounded-[--radius-control] px-2.5 py-2 text-sm text-white/55 transition-colors hover:text-white/85"
         >
           <MessageCircle className="text-whatsapp size-4" aria-hidden="true" />
           Support

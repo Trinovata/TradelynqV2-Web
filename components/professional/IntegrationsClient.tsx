@@ -15,16 +15,7 @@
  */
 
 import * as React from 'react'
-import {
-  Workflow,
-  Plus,
-  Trash2,
-  Send,
-  Copy,
-  Check,
-  CircleAlert,
-  ExternalLink,
-} from 'lucide-react'
+import { Workflow, Plus, Trash2, Send, Copy, Check, CircleAlert, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
@@ -548,10 +539,12 @@ function SecretModal({ secret, onClose }: { secret: string | null; onClose: () =
     >
       <div className="flex flex-col gap-4">
         <div className="border-border bg-card-subtle flex items-center gap-2 rounded-[--radius-control] border p-3">
-          <code className="text-foreground min-w-0 flex-1 truncate font-mono text-sm">{secret}</code>
+          <code className="text-foreground min-w-0 flex-1 truncate font-mono text-sm">
+            {secret}
+          </code>
           <Button variant="secondary" size="sm" onClick={copy}>
             {copied ? (
-              <Check className="size-4 text-success" aria-hidden="true" />
+              <Check className="text-success size-4" aria-hidden="true" />
             ) : (
               <Copy className="size-4" aria-hidden="true" />
             )}
@@ -559,8 +552,8 @@ function SecretModal({ secret, onClose }: { secret: string | null; onClose: () =
           </Button>
         </div>
         <p className="text-muted text-xs text-pretty">
-          Verify each delivery by computing <span className="font-mono">HMAC-SHA256</span> of the raw
-          request body with this secret and comparing it to the{' '}
+          Verify each delivery by computing <span className="font-mono">HMAC-SHA256</span> of the
+          raw request body with this secret and comparing it to the{' '}
           <span className="font-mono">X-TradeLynq-Signature</span> header.
         </p>
         <div className="flex justify-end">

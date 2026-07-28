@@ -27,7 +27,14 @@ import { z } from 'zod'
 
 // ── Groups (how the UI clusters the event picker) ────────────────────────────
 
-export const EVENT_GROUPS = ['enquiries', 'quotes', 'jobs', 'invoices', 'reviews', 'system'] as const
+export const EVENT_GROUPS = [
+  'enquiries',
+  'quotes',
+  'jobs',
+  'invoices',
+  'reviews',
+  'system',
+] as const
 export type EventGroup = (typeof EVENT_GROUPS)[number]
 
 // ── Shared fragments ─────────────────────────────────────────────────────────
@@ -178,7 +185,7 @@ export const EVENT_REGISTRY = {
       created_at: z.string(),
     }),
   },
-  'ping': {
+  ping: {
     group: 'system',
     label: 'Test ping',
     description: 'A manual test event sent from the integrations screen.',

@@ -7,7 +7,11 @@ import { loginRedirect } from '@/lib/routes'
 import { tierHasFeature, lowestTierWith, TIERS } from '@/lib/constants/pricing'
 import { Button } from '@/components/ui/Button'
 import { BlurFade } from '@/components/ui/blur-fade'
-import { IntegrationsClient, type WebhookRow, type DeliveryRow } from '@/components/professional/IntegrationsClient'
+import {
+  IntegrationsClient,
+  type WebhookRow,
+  type DeliveryRow,
+} from '@/components/professional/IntegrationsClient'
 
 export const metadata: Metadata = { title: 'Integrations' }
 
@@ -35,7 +39,9 @@ export default async function IntegrationsPage() {
       .order('created_at', { ascending: false }),
     access.supabase
       .from('webhook_delivery_log')
-      .select('id, webhook_config_id, event_type, status_code, succeeded, attempt, duration_ms, created_at')
+      .select(
+        'id, webhook_config_id, event_type, status_code, succeeded, attempt, duration_ms, created_at'
+      )
       .order('created_at', { ascending: false })
       .limit(25),
   ])
@@ -76,7 +82,10 @@ function IntegrationsTeaser({ requiredTierName }: { requiredTierName: string }) 
         <ul className="mx-auto mt-6 flex max-w-sm flex-col gap-2 text-left">
           {perks.map((perk) => (
             <li key={perk} className="text-body flex items-start gap-2 text-sm">
-              <span className="bg-success mt-1.5 size-1.5 shrink-0 rounded-full" aria-hidden="true" />
+              <span
+                className="bg-success mt-1.5 size-1.5 shrink-0 rounded-full"
+                aria-hidden="true"
+              />
               {perk}
             </li>
           ))}

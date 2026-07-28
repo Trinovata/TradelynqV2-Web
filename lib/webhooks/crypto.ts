@@ -81,9 +81,10 @@ export function decryptSecret(stored: string): string {
   const [, ivB64, tagB64, dataB64] = parts
   const decipher = createDecipheriv('aes-256-gcm', masterKey(), Buffer.from(ivB64!, 'base64'))
   decipher.setAuthTag(Buffer.from(tagB64!, 'base64'))
-  return Buffer.concat([decipher.update(Buffer.from(dataB64!, 'base64')), decipher.final()]).toString(
-    'utf8'
-  )
+  return Buffer.concat([
+    decipher.update(Buffer.from(dataB64!, 'base64')),
+    decipher.final(),
+  ]).toString('utf8')
 }
 
 /**
@@ -103,7 +104,11 @@ export function signPayload(rawBody: string, signingSecret: string): string {
  * A plain `===` on a MAC leaks timing that can be walked to a forgery; length is
  * checked first because `timingSafeEqual` throws on a length mismatch.
  */
-export function verifySignature(rawBody: string, signingSecret: string, signature: string): boolean {
+export function verifySignature(
+  rawBody: string,
+  signingSecret: string,
+  signature: string
+): boolean {
   const expected = signPayload(rawBody, signingSecret)
   const a = Buffer.from(expected)
   const b = Buffer.from(signature)

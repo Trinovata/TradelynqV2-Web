@@ -149,7 +149,10 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
-    logger.error('webhook:create_failed', { professionalId: access.professionalId, code: error.code })
+    logger.error('webhook:create_failed', {
+      professionalId: access.professionalId,
+      code: error.code,
+    })
     return err('INTERNAL')
   }
 

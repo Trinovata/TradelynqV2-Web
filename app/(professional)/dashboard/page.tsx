@@ -231,7 +231,7 @@ function StatTile({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-[--radius-card] border p-4 shadow-e1 transition-[transform,box-shadow,border-color] duration-200 ease-out',
+        'group shadow-e1 relative overflow-hidden rounded-[--radius-card] border p-4 transition-[transform,box-shadow,border-color] duration-200 ease-out',
         'hover:shadow-e2 hover:-translate-y-0.5',
         accent
           ? 'border-accent/25 bg-accent-soft'

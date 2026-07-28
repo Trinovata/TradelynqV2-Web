@@ -240,7 +240,8 @@ async function applyDeliveryOutcome(
       .from('webhook_configs')
       .update({ consecutive_failures: 0, last_success_at: new Date().toISOString() } as never)
       .eq('id', config.id)
-    if (error) logger.error('webhook:reset_streak_failed', { configId: config.id, code: error.code })
+    if (error)
+      logger.error('webhook:reset_streak_failed', { configId: config.id, code: error.code })
     return
   }
 
