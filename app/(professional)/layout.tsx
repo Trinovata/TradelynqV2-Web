@@ -28,13 +28,44 @@ export default async function ProfessionalLayout({ children }: { children: React
   const ctx = await requireProfessional()
   if (!ctx.ok) redirect(loginRedirect('/dashboard'))
 
+  // The shell leads with the professional's own identity — whose workspace this
+  // is — the way a premium SaaS tool does, plus the live credit balance the
+  // footer shows. One query at the frame; the tools stay pure content.
+  const [{ data: profile }, { data: credits }] = await Promise.all([
+    ctx.supabase
+      .from('professional_profiles')
+      .select('business_name, owner_name, profile_photo_url, slug, listing_status')
+      .eq('id', ctx.professionalId)
+      .maybeSingle(),
+    ctx.supabase
+      .from('tool_credit_accounts')
+      .select('balance')
+      .eq('professional_id', ctx.professionalId)
+      .maybeSingle(),
+  ])
+
+  const workspace = {
+    businessName: profile?.business_name ?? 'Your workspace',
+    ownerName: profile?.owner_name ?? null,
+    avatarUrl: profile?.profile_photo_url ?? null,
+    storefrontHref:
+      profile?.slug && profile.listing_status === 'active'
+        ? `/professionals/${profile.slug}`
+        : null,
+    credits: credits?.balance ?? null,
+  }
+
   return (
     <div className="bg-background flex min-h-dvh">
-      <WorkspaceSidebar tier={ctx.tier} />
+      <WorkspaceSidebar tier={ctx.tier} workspace={workspace} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <WorkspaceTopBar tier={ctx.tier} />
-        <main className="flex-1 px-4 pt-6 pb-24 sm:px-6 lg:px-10 lg:pb-10">{children}</main>
+        <WorkspaceTopBar tier={ctx.tier} workspace={workspace} />
+        {/* Each tool owns its content width + horizontal padding (a list wants
+            room, a form wants a narrow measure — premium tools vary by
+            context). The shell only reserves bottom room for the mobile tab
+            bar. */}
+        <main className="flex-1 pb-24 lg:pb-12">{children}</main>
       </div>
 
       <WorkspaceTabBar tier={ctx.tier} />

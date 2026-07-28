@@ -120,7 +120,7 @@ export default async function DashboardPage() {
     profile?.slug && profile.listing_status === 'active' ? `/professionals/${profile.slug}` : null
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10">
       {/* Orchestrated entrance: the surface assembles top-to-bottom in one
           calm sweep (BlurFade with rising delays) rather than snapping in —
           the premium page-load moment. Each block is one beat. */}

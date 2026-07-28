@@ -256,8 +256,11 @@
      themes because the rail itself never lightens — these replace raw bg-white,
      which the lexicon rightly bans for theme-adaptive surfaces. */
   --color-sidebar-hover: rgb(255 255 255 / 0.05);
-  --color-sidebar-active: rgb(255 255 255 / 0.1);
+  --color-sidebar-active: rgb(255 255 255 / 0.09);
   --color-sidebar-border: var(--sidebar-border);
+  /* A hairline over the navy rail — the sidebar's own divider, always a faint
+     white regardless of theme (there is only the navy sidebar). */
+  --color-sidebar-divider: rgb(255 255 255 / 0.07);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
