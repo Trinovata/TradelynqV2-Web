@@ -231,7 +231,7 @@ function StatTile({
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-[--radius-card] border p-4 transition-[transform,box-shadow,border-color] duration-200 ease-out',
+        'group relative overflow-hidden rounded-[--radius-card] border p-4 shadow-e1 transition-[transform,box-shadow,border-color] duration-200 ease-out',
         'hover:shadow-e2 hover:-translate-y-0.5',
         accent
           ? 'border-accent/25 bg-accent-soft'
@@ -274,7 +274,7 @@ function SetupGuide({
 }) {
   const pct = Math.round((done / steps.length) * 100)
   return (
-    <section className="border-border bg-card mb-6 rounded-[--radius-card] border p-5">
+    <section className="border-border bg-card shadow-e1 mb-6 rounded-[--radius-card] border p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="bg-accent-soft flex size-9 items-center justify-center rounded-[--radius-control]">
@@ -344,7 +344,7 @@ function Panel({
   children: React.ReactNode
 }) {
   return (
-    <section className="border-border bg-card overflow-hidden rounded-[--radius-card] border">
+    <section className="border-border bg-card shadow-e1 overflow-hidden rounded-[--radius-card] border">
       <div className="border-border flex items-center justify-between border-b px-5 py-3.5">
         <h2 className="text-foreground flex items-center gap-2 text-sm font-medium">
           <Icon className="text-muted size-4" aria-hidden="true" />

@@ -23,10 +23,14 @@
 /* ── Light: the default (R2 "Ink & Paper") ──────────────────────────────── */
 
 :root {
-  /* Surfaces */
-  --background: #f7f7f5;
+  /* Surfaces — the canvas sits distinctly below pure-white cards and leans a
+     hair toward the brand cyan (impeccable: tint neutrals toward the brand
+     hue), so a plain white card reads as a crafted, floating surface rather
+     than dissolving into the page. Hierarchy: card (#fff) > background >
+     card-subtle (recessed insets). */
+  --background: #eef1f1;
   --card: #ffffff;
-  --card-subtle: #f1f2f0;
+  --card-subtle: #e6eaea;
   --sidebar: #10161f;
 
   /* Ink */
