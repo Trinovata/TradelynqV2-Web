@@ -35,11 +35,16 @@
   --muted: #6b7480;
   --border: #e4e6e4;
 
-  /* Interactive — navy in R2, not cyan */
-  --accent: #16202e;
-  --accent-ink: #16202e;
-  --accent-foreground: #f7f7f5;
-  --accent-soft: #edeff2;
+  /* Interactive — CYAN brought forward as the brand accent (Gregg, 28 Jul:
+     "a bit more of the cyan"). Fills are the vibrant brand cyan with dark
+     ink text (high contrast, premium); accented TEXT/links use the darker
+     cyan-ink (AA on paper); soft is a cyan wash for selected/hover states —
+     so cyan now appears on every button, active tab, and tint. Headings and
+     body stay navy (--foreground) for readability. */
+  --accent: #00bdd6;
+  --accent-ink: hsl(187 100% 27%);
+  --accent-foreground: #052932;
+  --accent-soft: hsl(187 62% 94%);
 
   /* Meaning. Desaturated to sit in a neutral field. */
   --warning: #e09410;
@@ -89,7 +94,7 @@
   --chart-3: var(--success);
   --chart-4: var(--brand-amber);
   --chart-5: var(--destructive);
-  --sidebar-foreground: var(--accent-foreground);
+  --sidebar-foreground: #f7f7f5; /* explicit light — decoupled from accent-foreground now that accent is cyan */
   --sidebar-primary: var(--brand-cyan);
   --sidebar-primary-foreground: var(--foreground);
   --sidebar-accent: var(--accent-soft);
@@ -111,11 +116,13 @@
   --muted: #7d8695;
   --border: #232b37;
 
-  /* Inverted ink: a LIGHT accent, so accent-foreground goes dark. */
-  --accent: #d5d9de;
-  --accent-ink: #d5d9de;
-  --accent-foreground: #0b0f14;
-  --accent-soft: #1c232e;
+  /* Cyan accent on the dark ink — lifted so it carries on the deep field;
+     fills keep dark text, accented text uses the light cyan-ink, soft is a
+     deep cyan tint. */
+  --accent: hsl(187 88% 46%);
+  --accent-ink: hsl(187 85% 64%);
+  --accent-foreground: #04222a;
+  --accent-soft: hsl(190 45% 15%);
 
   --warning: #d18a16;
   --success: #14a882;
