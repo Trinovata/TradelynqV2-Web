@@ -4,11 +4,11 @@
 
 Source of truth: [`../TradeLynq-Docs/v2/02-DESIGN-SYSTEM.md`](../TradeLynq-Docs/v2/02-DESIGN-SYSTEM.md) (architecture, motion, component contract) as amended by [`02A-DESIGN-R2.md`](../TradeLynq-Docs/v2/02A-DESIGN-R2.md) (colour + type values). Where the two disagree on a **value**, R2 wins; on **architecture**, 02 stands.
 
-> **Status: R2 as amended 28 July 2026 (Gregg's accent + depth resolution).** The "Ink & Paper" base stands, with three amendments that are now LAW — do not "fix" the code back toward the older values:
+> **Status: D67 — the V1 front end returns (29 July 2026, Gregg's direct instruction).** V2's backend, routes, and page inventory stand; the presentation layer is V1's. Now LAW — do not "fix" the code back toward earlier directions:
 >
-> 1. **Cyan (`#00bdd6` light) is the sole interactive accent** — `--accent`/`--primary` on buttons, active nav, checkboxes, progress, tints. Navy is the *structural* ink (headings, sidebar), never the interactive colour.
-> 2. **Depth at rest** — the canvas deepened to a faintly cyan-tinted `#eef1f1` so pure-white cards float; bespoke navy-tinted elevations `--shadow-e1/e2/e3` replace Tailwind greys. Resting/empty states carry `shadow-e1` — premium cues must not be hover-conditional.
-> 3. **Type is "Caribbean Vivid"** — Bricolage Grotesque (display) + Hanken Grotesk (body) + JetBrains Mono (numerals), via `next/font/google`, zero runtime font requests. The Satoshi plan is retired.
+> 1. **V1's skin**: warm-white canvas `#F8F7F4`, navy `#1B2637` ink and sidebar, slate borders, **cyan (`#00bdd6`) as the sole interactive accent**, amber `#F59F0A` highlights. Cards stay white with the navy-tinted `--shadow-e1/e2/e3` elevations (the 28 Jul depth lesson survives the palette swap).
+> 2. **Satoshi is back** — the single brand face, self-hosted from V1's Fontshare kit via `next/font/local` (zero runtime font requests). Heroes at **900** again. JetBrains Mono keeps every numeral.
+> 3. **V1's motion vocabulary is back** (see §5) — the wow factor is a product requirement, not slop.
 >
 > `app/globals.css` is the value source of truth; this file explains it. Because components consume token names only, palette evolution stays a one-file edit.
 
@@ -111,7 +111,7 @@ Values below mirror `app/globals.css` (28 Jul amendment). If they ever disagree,
 
 ## 3. Typography
 
-**"Caribbean Vivid":** **Bricolage Grotesque** carries the display voice (`font-display` — warm, humanist, a little alive); **Hanken Grotesk** is the body; **JetBrains Mono** 400/500 with `tabular-nums` for every numeral. All via `next/font/google` at build time — zero external font requests at runtime. The Satoshi plan is retired; do not reintroduce it.
+**Satoshi** for everything (D67 — self-hosted from V1's Fontshare kit via `next/font/local`, variable 300–900), **JetBrains Mono** 400/500 with `tabular-nums` for every numeral. Zero external font requests at runtime. Display weights are V1's: **900 heroes** (`display-2xl/xl`), **700 titles** (`display-lg/md`), 600 sections (`display-sm`) — strong at large sizes without feeling cold.
 
 **Every number renders in mono:** prices, ratings, counts, quantities, IDs, table values, stat metrics, dates. This is the brand's precision signature and is not up for revision.
 
@@ -157,7 +157,7 @@ Physics: micro 50–100ms · short 150–250ms · medium 250–400ms · long 400
 
 All constants live in `lib/motion.ts` and are imported — **never re-declared inline.**
 
-The catalogue is **closed at M1–M16**. Nothing else ships.
+M1–M16 remain the workhorse catalogue for functional state changes. **D67 reopens the catalogue**: V1's wow vocabulary is first-class again — the ported components (`marquee`, `shine-border`, `animated-list`, `animated-shiny-text`, `word-rotate`, `hyper-text`, `pulsating-button`, `avatar-circles`, `bento-grid`, `confetti`, `progressive-blur`, and `components/ui/magicui/*`: `border-beam`, `number-ticker`, `shimmer-button`, `magic-card`, `particles`, `text-reveal`, `animated-gradient-text`, `animated-section`, `dot-pattern`, `rainbow-button`, `animated-circular-progress-bar`) plus the `animate-*` utility classes and `[data-animate]` scroll entrances in globals.css. Marketing and public surfaces get the wow; workspace surfaces stay purposeful (state-communicating motion first). Everything must still degrade under `prefers-reduced-motion` — the global override in globals.css enforces the floor.
 
 | # | Name | Trigger | Spec |
 |---|---|---|---|
@@ -178,7 +178,7 @@ The catalogue is **closed at M1–M16**. Nothing else ships.
 | M15 | Typeahead reveal | search suggestions | container M4; items stagger 20ms, max 5 |
 | M16 | Image settle | portfolio / gallery loads | blur-up 8px + 1.02 → sharp, 300ms; aspect boxes pre-reserved |
 
-**Deleted from V1 and never to return:** `glide-up` ambient drift, `border-beam`, `shimmer-slide`, `gradient-x`, decorative `spin-slow`. Ambient motion contradicts "motion communicates state".
+**Overturned by D67 (was: "deleted from V1 and never to return"):** the V1 animation set is restored per Gregg's direct instruction — the wow factor is the product's personality, not slop. The discipline that stays: motion on data/workspace surfaces still communicates state; ambient motion belongs on marketing surfaces and hero moments.
 
 **The Field** (the one signature moment, 02A §2A.4) is additive under D34 and lives in exactly two places: the landing hero and mobile app-open. Its guardrails outrank its wow — content never waits, poster-first, fades in only after LCP, static under `prefers-reduced-motion` / data-saver / low battery, self-disables via frame-time watchdog, kill-switch flag without deploy.
 
@@ -195,16 +195,16 @@ Shared conventions: CVA for variants · `disabled` = 50% opacity + `cursor-not-a
 From `v2/01 §1.3`. In doubt, remove. Specifically banned:
 
 - Emoji in UI (copy or labels)
-- Decorative gradients, glows, and coloured shadows
 - Rainbow KPI cards (per-stat coloured backgrounds)
-- Ambient/looping motion outside the Field
 - Generic filler copy ("No data", "Something went wrong", "Click here")
 - Stock-photo texture where real content belongs
 - More than one primary action per view region
 
-## 8. The warmth pass (D61 — "V3")
+Amended by D67: decorative gradients/glows and ambient motion are **allowed on marketing/public surfaces** through the ported V1 components — that is the wow factor, applied deliberately. Workspace data surfaces keep the restraint.
 
-Gregg's 29 Jul direction: V2's bones stay, but the front end must carry what V1 had — he is prouder of V1's feel. The audit against V1's DESIGN.md and pages found four deltas:
+## 8. The warmth pass (D61, superseded same day by D67)
+
+**Decided:** Gregg answered the audit directly — full V1 front end. Canvas is V1's warm white, display weight is back to 900, and the motion vocabulary returned (§5). `/dev/warmth` is kept as a historical comparison. The two dispositions still in force from the audit: **density** (adopt where content is real, never fake it) and **photo-led colour moments** (extend to category/storefront/portfolio as S113 closes out). The original audit table:
 
 | Delta | V1 | V2 today | Disposition |
 |---|---|---|---|
