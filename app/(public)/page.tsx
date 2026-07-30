@@ -36,9 +36,12 @@ import { FlowLine } from '@/components/shared/FlowLine'
 import { NumberTicker } from '@/components/shared/NumberTicker'
 import { PhoneFlow } from '@/components/shared/PhoneFlow'
 import { ConnectionField } from '@/components/shared/ConnectionField'
+import { HarbourHero } from '@/components/shared/HarbourHero'
 import { CategoryShowcase } from '@/components/shared/CategoryShowcase'
 import { Button } from '@/components/ui/Button'
 import { Reveal } from '@/components/shared/Reveal'
+import { Marquee } from '@/components/ui/marquee'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { HeroSearch } from './HeroSearch'
 
 /**
@@ -83,7 +86,7 @@ function SectionHeader({
       className={`flex max-w-2xl flex-col gap-3 ${align === 'center' ? 'items-center text-center' : ''} ${className}`}
     >
       <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">{eyebrow}</p>
-      <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+      <h2 className="font-display text-foreground text-3xl font-bold tracking-tight text-balance sm:text-4xl">
         {title}
       </h2>
       {support && <p className="text-body text-pretty">{support}</p>}
@@ -100,15 +103,22 @@ export default async function LandingPage() {
       <section className="relative isolate overflow-hidden">
         {/* Signature: a calm ring of connections orbiting the centre — the
             customer, and the professionals reachable around them. One layer, no
-            labels, centre cleared so the headline reads on quiet space. */}
+            labels, centre cleared so the headline reads on quiet space. It is
+            also the POSTER for the 3D layer: the harbour diorama (D67 wow
+            pass) crossfades over it after load, and every guardrailed case
+            (reduced motion, save-data, kill flag) simply keeps this field. */}
         <ConnectionField />
+        <HarbourHero />
         <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-7 px-4 pt-24 pb-16 text-center sm:px-6 sm:pt-32 sm:pb-24">
-          <span className="border-border bg-card text-body inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
+          <span className="border-border bg-card inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-medium">
             <span className="bg-success size-1.5 rounded-full" aria-hidden="true" />
-            Verified professionals across Trinidad &amp; Tobago
+            <AnimatedShinyText className="mx-0 max-w-none text-xs">
+              Verified professionals across Trinidad &amp; Tobago
+            </AnimatedShinyText>
           </span>
 
-          <h1 className="font-display text-foreground max-w-3xl text-[clamp(2.6rem,7.5vw,5rem)] leading-[0.96] font-semibold tracking-[-0.025em] text-balance">
+          {/* V1's 900-weight hero (D67) — heavy, confident, unmistakably ours. */}
+          <h1 className="font-display text-foreground max-w-3xl text-[clamp(2.6rem,7.5vw,5rem)] leading-[0.96] font-black tracking-[-0.025em] text-balance">
             Whatever you need done, someone here does it well.
           </h1>
 
@@ -145,6 +155,25 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* ── Category ticker — the V1 marquee moment: every category gliding by,
+          real taxonomy, decorative only (the Categories section below is the
+          navigable version). Pauses on hover; reduced-motion stills it. ── */}
+      {categories.length > 0 && (
+        <div className="border-border bg-card-subtle/40 border-y py-3" aria-hidden="true">
+          <Marquee pauseOnHover className="[--duration:45s] [--gap:2.5rem]">
+            {categories.map((node) => (
+              <span
+                key={node.parent.slug}
+                className="text-muted inline-flex items-center gap-2.5 text-sm font-medium whitespace-nowrap"
+              >
+                {node.parent.name}
+                <span className="bg-brand-cyan/60 size-1 rounded-full" />
+              </span>
+            ))}
+          </Marquee>
+        </div>
+      )}
+
       {/* ── Product showcase — a two-column split: the story on the left, the
           real journey playing on a phone on the right. No scroll gimmick. ── */}
       {featured.length > 0 && (
@@ -154,7 +183,7 @@ export default async function LandingPage() {
               <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
                 The whole journey
               </p>
-              <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              <h2 className="font-display text-foreground text-3xl font-bold tracking-tight text-balance sm:text-4xl">
                 From a problem to a plumber — in four taps.
               </h2>
               <p className="text-body text-pretty">
@@ -284,7 +313,7 @@ export default async function LandingPage() {
               <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
                 Categories
               </p>
-              <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+              <h2 className="font-display text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
                 What people are booking
               </h2>
               <p className="text-body">
@@ -320,7 +349,7 @@ export default async function LandingPage() {
                 <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
                   Professionals
                 </p>
-                <h2 className="font-display text-foreground text-3xl font-semibold tracking-tight sm:text-4xl">
+                <h2 className="font-display text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
                   Highly rated right now
                 </h2>
                 <p className="text-body">Ranked by rating and reviews — never by who pays.</p>
@@ -407,7 +436,7 @@ export default async function LandingPage() {
           <p className="text-muted text-xs font-medium tracking-[0.14em] uppercase">
             For professionals
           </p>
-          <h2 className="font-display text-foreground text-[clamp(2rem,5vw,3.25rem)] leading-tight font-semibold tracking-[-0.02em] text-balance">
+          <h2 className="font-display text-foreground text-[clamp(2rem,5vw,3.25rem)] leading-tight font-black tracking-[-0.02em] text-balance">
             Run your trade like a business.
           </h2>
           <p className="text-body max-w-xl text-pretty">
