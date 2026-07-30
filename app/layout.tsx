@@ -1,29 +1,25 @@
 import type { Metadata } from 'next'
-import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import { ThemeProvider, ThemeScript } from '@/components/layout/ThemeProvider'
 
 /**
- * Root layout and typography.
+ * Root layout and typography (D67 — the V1 front end returns).
  *
- * The Caribbean Vivid palette ships with real faces, self-hosted at build by
- * `next/font/google` — so there are ZERO external font requests at runtime, the
- * property the old Satoshi plan wanted. Bricolage Grotesque carries the display
- * voice (warm, humanist, a little alive); Hanken Grotesk is the body; JetBrains
- * Mono holds the tabular numerals the design law requires. Each exposes a CSS
- * variable the token layer reads (`--font-bricolage`, `--font-hanken`,
- * `--font-jetbrains-mono`).
+ * Satoshi is back as the single brand face, exactly as V1 ran it — but
+ * self-hosted from V1's own Fontshare kit via `next/font/local`, so the
+ * zero-external-font-requests property holds. The variable file carries
+ * weights 300–900; V1's 900-weight heroes are available again. JetBrains
+ * Mono keeps the tabular numerals. The token layer reads `--font-satoshi`
+ * and `--font-jetbrains-mono`.
  */
-const bricolage = Bricolage_Grotesque({
-  subsets: ['latin'],
-  variable: '--font-bricolage',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
-
-const hanken = Hanken_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-hanken',
+const satoshi = localFont({
+  src: [
+    { path: './fonts/satoshi/Satoshi-Variable.woff2', weight: '300 900', style: 'normal' },
+    { path: './fonts/satoshi/Satoshi-VariableItalic.woff2', weight: '300 900', style: 'italic' },
+  ],
+  variable: '--font-satoshi',
   display: 'swap',
 })
 
@@ -49,7 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     // <html> only — it does not suppress warnings anywhere else in the tree.
     <html
       lang="en-TT"
-      className={`h-full antialiased ${bricolage.variable} ${hanken.variable} ${jetbrainsMono.variable}`}
+      className={`h-full antialiased ${satoshi.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <head>
