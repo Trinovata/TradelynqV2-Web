@@ -334,10 +334,22 @@ export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number]
 
 export const CURRENT_LEGAL_VERSIONS: Readonly<Record<LegalDocument, string>> = {
   privacy: '2.0',
-  terms: '2.0',
+  // 2.1 (25 Jul 2026): the §3.2A refunds section — every existing acceptance
+  // is for 2.0, so the gate re-prompts platform-wide by design.
+  terms: '2.1',
   eula: '1.0',
   reviews: '1.0',
 } as const
+
+/**
+ * The documents a customer must have accepted before contacting a professional —
+ * shared by the enquiry create route and the contact reveal route so the two
+ * halves of the same gate (v2/08 §8.1: "one gate, not two") can never drift.
+ *
+ * Reviews acceptance is the one the API pack calls out; privacy + terms bind
+ * every interaction. EULA is the professional's document, not the customer's.
+ */
+export const CUSTOMER_CONTACT_LEGAL = ['privacy', 'terms', 'reviews'] as const
 
 /**
  * Requires that the in-force version of each named document has been accepted.
