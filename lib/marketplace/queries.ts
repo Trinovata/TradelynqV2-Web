@@ -9,6 +9,7 @@
  */
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   buildProfessionalCardData,
   type ProfessionalCardData,
@@ -116,7 +117,15 @@ export type Storefront = {
   category: { slug: string; name: string } | null
   areas: string[]
   services: { name: string; price_ttd?: number; description?: string }[]
-  businessHours: unknown
+  /** V1-shape day→string map ("8:00 AM - 5:00 PM" / "Closed"), or null. */
+  businessHours: Record<string, string> | null
+  /** Portfolio image URLs; empty array → the section is omitted (§3.4). */
+  portfolio: string[]
+  /**
+   * RP2: median accepted-response time over the last 90 days. Null until the
+   * sample reaches 5 — the chip renders honestly or not at all (D57).
+   */
+  responseTime: { medianMinutes: number; sample: number } | null
   /** Public links (anon column grant) — rendered on the REVEALED rail (§5.9). */
   websiteUrl: string | null
   instagramHandle: string | null
@@ -167,6 +176,7 @@ type StorefrontRow = {
   service_areas: string[] | null
   services: unknown
   business_hours: unknown
+  portfolio_urls: string[] | null
   website_url: string | null
   instagram_handle: string | null
   verification_status: string
@@ -174,6 +184,19 @@ type StorefrontRow = {
   has_insurance: boolean
   average_rating: number | null
   review_count: number | null
+}
+
+/**
+ * business_hours is a JSONB `Record<day, string>` (V1 shape, carried: lowercase
+ * day keys, free-text values like "8:00 AM - 5:00 PM" or "Closed"). Anything
+ * else stored there renders as no hours section rather than a crash.
+ */
+function parseBusinessHours(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    (pair): pair is [string, string] => typeof pair[1] === 'string' && pair[1].trim() !== ''
+  )
+  return entries.length > 0 ? Object.fromEntries(entries) : null
 }
 
 export async function getProfessionalBySlug(slug: string): Promise<Storefront | null> {
@@ -184,7 +207,7 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     .select(
       'id, user_id, slug, business_name, owner_name, tagline, bio, profile_photo_url, ' +
         'cover_photo_url, category_id, service_areas, services, business_hours, ' +
-        'website_url, instagram_handle, verification_status, ' +
+        'portfolio_urls, website_url, instagram_handle, verification_status, ' +
         'national_id_verified, has_insurance, average_rating, review_count, listing_status'
     )
     .eq('slug', slug)
@@ -194,23 +217,27 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
   if (error || !data) return null
   const row = data as unknown as StorefrontRow
 
-  const [{ data: category }, { data: subtypeRows }, { data: reviews }] = await Promise.all([
-    row.category_id
-      ? supabase.from('categories').select('slug, name').eq('id', row.category_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    // Via the RPC, not a profiles join — profiles' RLS hides professional_subtype
-    // from anon/other users, which made the badge always read 'sole_trader'.
-    supabase.rpc('professional_subtypes', { p_user_ids: [row.user_id] }),
-    supabase
-      .from('reviews')
-      .select(
-        'id, reviewer_name, star_rating, testimonial, status, is_seeded, job_enquiry_id, created_at'
-      )
-      .eq('professional_id', row.id)
-      .in('status', ['approved', 'featured'])
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
+  const [{ data: category }, { data: subtypeRows }, { data: reviews }, { data: responseRows }] =
+    await Promise.all([
+      row.category_id
+        ? supabase.from('categories').select('slug, name').eq('id', row.category_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      // Via the RPC, not a profiles join — profiles' RLS hides professional_subtype
+      // from anon/other users, which made the badge always read 'sole_trader'.
+      supabase.rpc('professional_subtypes', { p_user_ids: [row.user_id] }),
+      supabase
+        .from('reviews')
+        .select(
+          'id, reviewer_name, star_rating, testimonial, status, is_seeded, job_enquiry_id, created_at'
+        )
+        .eq('professional_id', row.id)
+        .in('status', ['approved', 'featured'])
+        .order('created_at', { ascending: false })
+        .limit(20),
+      // RP2: aggregate-only SECURITY DEFINER bridge over RLS-private enquiries
+      // (20260724000002) — a median and a count, never a row.
+      supabase.rpc('professional_response_stats', { p_professional_id: row.id }),
+    ])
 
   const distribution: Record<'5' | '4' | '3' | '2' | '1', number> = {
     '5': 0,
@@ -259,7 +286,20 @@ export async function getProfessionalBySlug(slug: string): Promise<Storefront | 
     category: category ? { slug: category.slug, name: category.name } : null,
     areas: row.service_areas ?? [],
     services: Array.isArray(row.services) ? (row.services as Storefront['services']) : [],
-    businessHours: row.business_hours,
+    businessHours: parseBusinessHours(row.business_hours),
+    portfolio: Array.isArray(row.portfolio_urls)
+      ? row.portfolio_urls.filter((u): u is string => typeof u === 'string' && u.trim() !== '')
+      : [],
+    responseTime: (() => {
+      const stats = Array.isArray(responseRows) ? responseRows[0] : null
+      // PostgREST serialises NUMERIC as a JSON string in some paths — accept both.
+      const raw = stats?.median_minutes
+      const median =
+        typeof raw === 'number' ? raw : typeof raw === 'string' ? Number.parseFloat(raw) : NaN
+      const sample = typeof stats?.sample === 'number' ? stats.sample : 0
+      // The chip renders honestly or not at all (RP2/D57): 5 responses minimum.
+      return Number.isFinite(median) && sample >= 5 ? { medianMinutes: median, sample } : null
+    })(),
     websiteUrl: row.website_url,
     instagramHandle: row.instagram_handle,
     verification: {
@@ -288,6 +328,12 @@ export type ViewerGateState = {
   contact: StorefrontContact | null
   connectionCount: number
   kycStatus: string | null
+  /**
+   * The viewer owns a customer_profiles row. False for a professional or admin
+   * browsing a storefront — surfaces hide customer-only affordances (the save
+   * toggle) rather than offering an action the API will 403.
+   */
+  isCustomer: boolean
 }
 
 /**
@@ -296,11 +342,11 @@ export type ViewerGateState = {
  * customer. Returns null when nobody is signed in.
  *
  * The customer's own `connections` rows are RLS-visible, so the pair check runs
- * on the RLS client. The contact columns are selected ONLY once the pair row is
- * confirmed, and by explicit column list — `authenticated` has table-wide
- * SELECT on active rows, so redaction IS the column list (migration
- * 20260719000005: "Redaction is the API's job … anything reading this table
- * directly for a public surface MUST select an explicit column list").
+ * on the RLS client — that check IS the gate. The contact columns are read ONLY
+ * once the pair row is confirmed, and via the admin client: since migration
+ * 20260724000001 `authenticated` holds a column allow-list that withholds the
+ * contact fields entirely, so redaction is the grant and this post-gate read is
+ * the one sanctioned path.
  *
  * For a non-customer viewer (a professional browsing a peer) the
  * customer_profiles lookup returns nothing and the state degrades to the
@@ -331,7 +377,10 @@ export async function getViewerGateState(professionalId: string): Promise<Viewer
 
   let contact: StorefrontContact | null = null
   if (revealed) {
-    const { data: pro } = await supabase
+    // Post-gate read. The RLS pair check above is the gate; the admin client is
+    // used only because the column grant (20260724000001) withholds contact
+    // fields from `authenticated` — never call this without `revealed`.
+    const { data: pro } = await createAdminClient()
       .from('professional_profiles')
       .select('contact_phone, contact_whatsapp')
       .eq('id', professionalId)
@@ -344,6 +393,9 @@ export async function getViewerGateState(professionalId: string): Promise<Viewer
     contact,
     connectionCount: profile?.connection_count ?? 0,
     kycStatus: profile?.kyc_status ?? null,
+    // A customer always owns a customer_profiles row (created at role
+    // assignment); its absence means a professional or admin is browsing.
+    isCustomer: profile !== null,
   }
 }
 

@@ -22,6 +22,7 @@ import { ProfessionalCard } from '@/components/shared/ProfessionalCard'
 import { ProfessionalCardSkeleton } from '@/components/ui/States'
 import { Button } from '@/components/ui/Button'
 import { whatsappDigits } from '@/lib/whatsapp'
+import { SUPPORT_PHONE } from '@/lib/constants/contact'
 import type { SearchResult, SearchSort } from '@/lib/actions/search'
 
 type CategoryOption = { slug: string; name: string }
@@ -44,7 +45,7 @@ const SORT_LABELS: Record<SearchSort, string> = {
 const AREAS = ['Port of Spain', 'San Fernando', 'Chaguanas', 'Arima', 'Tobago']
 
 /** The platform's support number for the concierge hand-off (public, no reveal gate). */
-const CONCIERGE_PHONE = '+18686270000'
+const CONCIERGE_PHONE = SUPPORT_PHONE
 
 export function SearchClient({ initialResult, query, category, area, sort, categories }: Props) {
   const router = useRouter()

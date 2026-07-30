@@ -23,7 +23,9 @@ import {
   CUSTOMER_CONTACT_LEGAL,
 } from '@/lib/access/api'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { err, ok } from '@/lib/api/errors'
+import { ensureConnection } from '@/lib/marketplace/connections'
 import { logger } from '@/lib/utils/logger'
 
 const bodySchema = z.object({
@@ -58,12 +60,12 @@ export async function POST(request: Request) {
 
   // 3. The professional must exist and be accepting. RLS only returns a row for an
   // ACTIVE public listing, so a null here means "not reachable" either way.
-  // Contact columns are selected here but returned ONLY in the 201, after every
-  // gate has passed and the connection is ensured — at which point the reveal is
-  // server-verified (D13). They never appear on an error path.
+  // Contact columns are NOT selected here — this step runs before legal (4) and
+  // the connection gate (5), and since 20260724000001 the column grant would
+  // refuse them anyway. They are read post-gate, at step 8.
   const { data: professional, error: proError } = await ctx.supabase
     .from('professional_profiles')
-    .select('id, category_id, owner_name, business_name, contact_phone, contact_whatsapp')
+    .select('id, category_id, owner_name, business_name')
     .eq('id', professional_id)
     .maybeSingle()
 
@@ -129,20 +131,23 @@ export async function POST(request: Request) {
   }
 
   // 8. Ensure the connection — this contact is now on the record and counts
-  // against the free-contact gate. Idempotent: a returning customer already has
-  // one, and the unique (customer, professional) pair absorbs the repeat.
-  const { error: connError } = await ctx.supabase
-    .from('connections')
-    .upsert(
-      { customer_id: ctx.userId, professional_id },
-      { onConflict: 'customer_id,professional_id', ignoreDuplicates: true }
-    )
-  if (connError) {
-    // The enquiry is written and is the source of truth; a missed connection row
-    // is self-healing (the count is recomputed by trigger). Log, don't fail.
-    logger.error('enquiry:connection_ensure_failed', {
+  // against the free-contact gate. Idempotent and log-don't-fail: the enquiry
+  // is written and is the source of truth (see lib/marketplace/connections.ts).
+  await ensureConnection(ctx.supabase, ctx.userId, professional_id)
+
+  // 9. The contact for the 201 payload — read ONLY now every gate has passed
+  // and the connection is ensured, so the reveal is server-verified (D13).
+  // Admin client because the column grant (20260724000001) withholds contact
+  // columns from `authenticated` entirely. Log-don't-fail: the enquiry exists.
+  const { data: contactRow, error: contactError } = await createAdminClient()
+    .from('professional_profiles')
+    .select('contact_phone, contact_whatsapp')
+    .eq('id', professional_id)
+    .maybeSingle()
+  if (contactError) {
+    logger.error('enquiry:contact_read_failed', {
       professionalId: professional_id,
-      code: connError.code,
+      code: contactError.code,
     })
   }
 
@@ -159,8 +164,8 @@ export async function POST(request: Request) {
     {
       enquiry,
       contact: {
-        phone: professional.contact_phone ?? null,
-        whatsapp: professional.contact_whatsapp ?? null,
+        phone: contactRow?.contact_phone ?? null,
+        whatsapp: contactRow?.contact_whatsapp ?? null,
       },
     },
     { status: 201 }

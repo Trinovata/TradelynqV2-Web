@@ -100,6 +100,13 @@ export default async function CustomerEnquiriesPage() {
                     <span className="text-body font-medium">Reply:</span> {row.declined_reason}
                   </p>
                 )}
+
+                <Link
+                  href={`/home/enquiries/${row.id}`}
+                  className="text-foreground mt-3 inline-block text-sm font-medium underline underline-offset-4"
+                >
+                  View details
+                </Link>
               </li>
             )
           })}

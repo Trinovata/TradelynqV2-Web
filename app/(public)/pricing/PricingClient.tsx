@@ -19,31 +19,56 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
 import { PricingTierCards } from '@/components/shared/PricingTierCards'
-import { TIERS, TIER_ORDER, type AccountTrack, type TierId } from '@/lib/constants/pricing'
-
-type BillingPeriod = 'monthly' | 'annual'
+import {
+  BILLING_PERIODS,
+  TIERS,
+  TIER_ORDER,
+  type AccountTrack,
+  type BillingPeriodMonths,
+  type TierId,
+} from '@/lib/constants/pricing'
 
 /**
  * Account-type options. Display strings are verbatim from copy-public.md §9.2;
  * each maps to an `AccountTrack`. Ordered along the platform's upgrade path
  * (§10.3): Student Entrepreneur → Small Business → Registered Business.
  */
-const ACCOUNT_OPTIONS: ReadonlyArray<{ value: AccountTrack; label: string }> = [
+const ACCOUNT_OPTIONS: ReadonlyArray<{ value: AccountTrack; label: React.ReactNode }> = [
   { value: 'student', label: 'Student Entrepreneur' },
   { value: 'sole_trader', label: 'Small Business' },
   { value: 'registered', label: 'Registered Business' },
 ]
 
-const BILLING_OPTIONS: ReadonlyArray<{ value: BillingPeriod; label: string }> = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'annual', label: 'Annual' },
-]
+/**
+ * The commit-length ladder (25 Jul 2026 directive). Each committed option
+ * carries its savings chip INSIDE the control, so the trade-off is visible at
+ * the moment of choice rather than after it.
+ */
+const PERIOD_OPTIONS: ReadonlyArray<{ value: `${BillingPeriodMonths}`; label: React.ReactNode }> =
+  BILLING_PERIODS.map((period) => ({
+    value: `${period.months}` as `${BillingPeriodMonths}`,
+    label: period.savingsLabel ? (
+      <span className="flex flex-col items-center gap-0">
+        <span>{period.label}</span>
+        <span className="text-success text-[10px] leading-tight font-medium">
+          {period.savingsLabel}
+        </span>
+      </span>
+    ) : (
+      period.label
+    ),
+  }))
 
 export function PricingClient() {
   const router = useRouter()
   // Small Business (sole trader) is the core track most professionals arrive on.
   const [accountTrack, setAccountTrack] = React.useState<AccountTrack>('sole_trader')
-  const [billingPeriod, setBillingPeriod] = React.useState<BillingPeriod>('monthly')
+  // Defaults to the 12-month package: the best rate is the first thing a
+  // visitor sees (anchoring), and switching to monthly makes the cost of NOT
+  // committing legible — the honest version of the pattern, since the struck
+  // anchor on every card is the real monthly price, never an invented one.
+  const [periodKey, setPeriodKey] = React.useState<`${BillingPeriodMonths}`>('12')
+  const periodMonths = Number(periodKey) as BillingPeriodMonths
 
   const tiers = React.useMemo(() => TIER_ORDER.map((id) => TIERS[id]), [])
 
@@ -68,9 +93,9 @@ export function PricingClient() {
         />
         <Segmented
           label="Billing period"
-          options={BILLING_OPTIONS}
-          value={billingPeriod}
-          onChange={setBillingPeriod}
+          options={PERIOD_OPTIONS}
+          value={periodKey}
+          onChange={setPeriodKey}
           size="compact"
           className="w-full sm:w-fit"
         />
@@ -79,7 +104,7 @@ export function PricingClient() {
       <PricingTierCards
         tiers={tiers}
         accountTrack={accountTrack}
-        billingPeriod={billingPeriod}
+        periodMonths={periodMonths}
         pioneerActive={true}
         context="public"
         onSelect={handleSelect}
@@ -109,7 +134,7 @@ function Segmented<T extends string>({
   /** Accessible name for the group. Shown when `showLabel`, else screen-reader only. */
   label: string
   showLabel?: boolean
-  options: ReadonlyArray<{ value: T; label: string }>
+  options: ReadonlyArray<{ value: T; label: React.ReactNode }>
   value: T
   onChange: (value: T) => void
   size?: 'fluid' | 'compact'

@@ -15,7 +15,11 @@ import {
   REGISTRATION_FEE,
   accountSurcharge,
   isPriceFrom,
+  periodPerMonth,
+  periodSavings,
+  periodTotal,
   type AccountTrack,
+  type BillingPeriodMonths,
   type Tier,
   type TierId,
 } from '@/lib/constants/pricing'
@@ -53,7 +57,8 @@ export type PricingTierCardsProps = {
   /** ALWAYS TIERS in TIER_ORDER from lib/constants/pricing.ts — never literals. */
   tiers: Tier[]
   accountTrack: AccountTrack
-  billingPeriod: 'monthly' | 'annual'
+  /** Commit length (1/3/6/12) — prices derive via periodPerMonth/periodTotal. */
+  periodMonths: BillingPeriodMonths
   /** Renders the Pioneer banner + a "3 months free" price line on every card. */
   pioneerActive: boolean
   /** `workspace` uses the amber `upgrade` CTA + marks the current tier; `public` uses primary. */
@@ -63,12 +68,9 @@ export type PricingTierCardsProps = {
   onSelect: (tier: TierId) => void
 }
 
-/** Calendar months in a year — used to annualise, not a business price. */
-const MONTHS_PER_YEAR = 12
-
 export const PricingTierCards = React.forwardRef<HTMLDivElement, PricingTierCardsProps>(
   function PricingTierCards(
-    { tiers, accountTrack, billingPeriod, pioneerActive, context, currentTier, onSelect },
+    { tiers, accountTrack, periodMonths, pioneerActive, context, currentTier, onSelect },
     ref
   ) {
     // Static data, but a misconfigured caller (or an empty filter) should not
@@ -122,11 +124,7 @@ export const PricingTierCards = React.forwardRef<HTMLDivElement, PricingTierCard
                   <CardDescription>{tier.summary}</CardDescription>
                 </CardHeader>
 
-                <PriceBlock
-                  tier={tier}
-                  pioneerActive={pioneerActive}
-                  billingPeriod={billingPeriod}
-                />
+                <PriceBlock tier={tier} pioneerActive={pioneerActive} periodMonths={periodMonths} />
 
                 <FeatureList
                   adds={tier.adds}
@@ -190,19 +188,13 @@ function PioneerBanner() {
 function PriceBlock({
   tier,
   pioneerActive,
-  billingPeriod,
+  periodMonths,
 }: {
   tier: Tier
   pioneerActive: boolean
-  billingPeriod: 'monthly' | 'annual'
+  periodMonths: BillingPeriodMonths
 }) {
   const fromSuffix = isPriceFrom(tier.id) ? '+' : ''
-  const fullPrice = (
-    <span className="font-mono tabular-nums">
-      {formatTTD(tier.monthly)}
-      {fromSuffix}
-    </span>
-  )
 
   if (pioneerActive) {
     return (
@@ -222,23 +214,43 @@ function PriceBlock({
     )
   }
 
+  const perMonth = periodPerMonth(tier.id, periodMonths)
+  const total = periodTotal(tier.id, periodMonths)
+  const savings = periodSavings(tier.id, periodMonths)
+
   return (
     <div className="mt-4 flex flex-col gap-0.5">
       <p className="text-foreground text-display-sm">
-        {fullPrice}
+        {/* The anchor: on any committed period the full monthly rate is struck
+            beside the effective rate, so the saving is legible at a glance —
+            never a raw discount percentage doing the persuading alone. */}
+        {savings > 0 && (
+          <span className="text-muted mr-2 font-mono text-base font-normal tabular-nums line-through">
+            {formatTTD(tier.monthly)}
+          </span>
+        )}
+        <span className="font-mono tabular-nums">
+          {formatTTD(perMonth)}
+          {fromSuffix}
+        </span>
         <span className="text-muted text-base font-normal"> / month</span>
       </p>
-      {billingPeriod === 'annual' && (
-        // No annual discount lives in the constants, so the per-month rate is
-        // unchanged and we state only the derivable annual total. See the flag
-        // in the report: the "2 months free" bonus copy needs a constant first.
+      {periodMonths > 1 && (
         <p className="text-muted text-sm">
-          Billed annually —{' '}
+          Billed{' '}
           <span className="font-mono tabular-nums">
-            {formatTTD(tier.monthly * MONTHS_PER_YEAR)}
+            {formatTTD(total)}
             {fromSuffix}
           </span>{' '}
-          / year
+          every <span className="font-mono tabular-nums">{periodMonths}</span> months
+          {savings > 0 && (
+            <>
+              {' — '}
+              <span className="text-success">
+                save <span className="font-mono tabular-nums">{formatTTD(savings)}</span>
+              </span>
+            </>
+          )}
         </p>
       )}
     </div>

@@ -2,15 +2,19 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { requireCustomer } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
+import { CustomerNavLinks } from '@/components/customer/CustomerNavLinks'
+import { CustomerTabBar } from '@/components/customer/CustomerTabBar'
+import { Toaster } from '@/components/ui/Toast'
 
 /**
- * The customer portal shell (playbook S096, spec v2/04).
+ * The customer portal shell (playbook S096, spec v2/04 §4.0).
  *
  * Gates the whole (customer) group at the boundary — reaching any customer page
  * without a customer session bounces to login, which routes an authenticated
- * user on to their own home. A deliberately light chrome for now: the wordmark
- * and the one action a customer always wants (find a professional). The richer
- * portal navigation lands with the rest of Phase 5.
+ * user on to their own home. Chrome is deliberately light: a desktop header
+ * with the four destinations, and a mobile bottom tab bar (the portal is four
+ * places, not a workspace of tools). Extra bottom padding on mobile so the tab
+ * bar never covers content.
  */
 export default async function CustomerLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireCustomer()
@@ -23,15 +27,19 @@ export default async function CustomerLayout({ children }: { children: React.Rea
           <Link href="/home" className="text-foreground text-base font-semibold tracking-tight">
             Trade<span className="text-brand-cyan">Lynq</span>
           </Link>
+          {/* Desktop: the four destinations inline. Mobile: the bottom tab bar. */}
+          <CustomerNavLinks />
           <Link
             href="/search"
-            className="text-body hover:text-foreground text-sm transition-colors"
+            className="text-body hover:text-foreground text-sm transition-colors lg:hidden"
           >
             Find a professional
           </Link>
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+      <CustomerTabBar />
+      <Toaster />
     </div>
   )
 }

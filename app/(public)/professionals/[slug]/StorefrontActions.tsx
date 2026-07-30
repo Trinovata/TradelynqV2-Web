@@ -32,7 +32,10 @@
  * RP1 (guest-enquiry path) deferred — not locked by the experience-definer;
  * this is the classic gate per v2/08 §8.1.
  *
- * SaveButton / ShareSheet (§5.9) deferred to S084 — the saved API is unbuilt.
+ * SaveButton (S084) mounts in the desktop rail below "Request a quote" (§3.4:
+ * quote · save · share). The mobile bottom bar spec (§5.9) lists only reveal +
+ * quote, so the mobile save mount lives in the page's identity header instead.
+ * ShareSheet remains deferred.
  */
 import * as React from 'react'
 import Link from 'next/link'
@@ -44,6 +47,7 @@ import { AtSign, Globe, Lock, MessageCircle, Phone, SearchX } from 'lucide-react
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { LegalAcceptanceModal } from '@/components/shared/LegalAcceptanceModal'
+import { SaveButton } from '@/components/shared/SaveButton'
 import { formatTTD, formatPhone, normalisePhone } from '@/lib/utils/format'
 import { whatsappLink } from '@/lib/whatsapp'
 import { loginRedirect } from '@/lib/routes'
@@ -66,6 +70,14 @@ type Props = {
   isSignedIn: boolean
   initialRevealed: boolean
   initialContact: ContactInfo | null
+  /** Whether the viewer has already saved this professional (S084). */
+  initialSaved: boolean
+  /**
+   * Whether the save affordance renders at all (S084). True for signed-out
+   * viewers (the button routes them to login) and customers; false for a
+   * signed-in professional or admin, for whom the API would only ever 403.
+   */
+  canSave: boolean
   connectionCount: number
   kycStatus: string | null
   websiteUrl: string | null
@@ -77,15 +89,17 @@ function externalHref(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`
 }
 
-// `name` and `category` stay in Props for the page's call site: `name` feeds the
-// S084 SaveButton aria (`Save {name}`) when it lands.
+// `category` stays in Props for the page's call site.
 export function StorefrontActions({
   professionalId,
+  name,
   firstName,
   fromPrice,
   isSignedIn,
   initialRevealed,
   initialContact,
+  initialSaved,
+  canSave,
   connectionCount: initialConnectionCount,
   websiteUrl,
   instagramHandle,
@@ -365,7 +379,18 @@ export function StorefrontActions({
               <Button variant="secondary" fullWidth onClick={openEnquiry}>
                 {COPY.rail.requestQuote}
               </Button>
-              {/* SaveButton (aria `Save ${name}`) + ShareSheet land at S084. */}
+              {/* §3.4 rail order: quote · save · share. ShareSheet mounts
+                  beside this when it lands. */}
+              {canSave && (
+                <div className="flex justify-center">
+                  <SaveButton
+                    professionalId={professionalId}
+                    name={name}
+                    isSignedIn={isSignedIn}
+                    initialSaved={initialSaved}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

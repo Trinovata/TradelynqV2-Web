@@ -220,3 +220,47 @@ export function lowestTierWith(feature: FeatureKey): TierId {
   // the return type total rather than optional.
   return found ?? 'enterprise'
 }
+
+// ── Billing periods (Gregg directive, 25 Jul 2026 — D-entry pending) ─────────
+
+/**
+ * Commit-length pricing: the longer the package, the cheaper the month. The
+ * ladder replaces the earlier monthly/annual toggle (deck §9.2's "2 months
+ * free on annual" flag is now resolved BY this model — 12 months IS 2 months
+ * free, exactly).
+ *
+ * Totals are computed total-first so the arithmetic lands on clean TTD:
+ * 12 months = monthly × 10 (two months free), 6 months = ×0.90, 3 = ×0.95.
+ * The per-month figure shown on a card is the derived total ÷ months — the
+ * struck monthly price beside it is the anchor that makes the saving legible.
+ */
+export type BillingPeriodMonths = 1 | 3 | 6 | 12
+
+export const BILLING_PERIODS: ReadonlyArray<{
+  months: BillingPeriodMonths
+  label: string
+  multiplier: number
+  /** The chip on the toggle. Null for the base period — no fake zero-savings. */
+  savingsLabel: string | null
+}> = [
+  { months: 1, label: 'Monthly', multiplier: 1, savingsLabel: null },
+  { months: 3, label: '3 months', multiplier: 0.95, savingsLabel: 'Save 5%' },
+  { months: 6, label: '6 months', multiplier: 0.9, savingsLabel: 'Save 10%' },
+  { months: 12, label: '12 months', multiplier: 10 / 12, savingsLabel: '2 months free' },
+]
+
+/** The package total for a tier over a period, in whole TTD. */
+export function periodTotal(tier: TierId, months: BillingPeriodMonths): number {
+  const period = BILLING_PERIODS.find((p) => p.months === months)
+  return Math.round(TIERS[tier].monthly * months * (period?.multiplier ?? 1))
+}
+
+/** The effective per-month rate for the period — the number the card leads with. */
+export function periodPerMonth(tier: TierId, months: BillingPeriodMonths): number {
+  return Math.round(periodTotal(tier, months) / months)
+}
+
+/** What the package saves against paying monthly, in whole TTD (0 for monthly). */
+export function periodSavings(tier: TierId, months: BillingPeriodMonths): number {
+  return TIERS[tier].monthly * months - periodTotal(tier, months)
+}

@@ -565,12 +565,14 @@ describe('ensureLegalAcceptances — the version check', () => {
   })
 
   it('accepts the in-force version', async () => {
+    // Reads the constant, not a literal — a version bump (e.g. terms 2.0→2.1,
+    // 25 Jul 2026) must re-prompt users, never quietly break this test.
     const result = await ensureLegalAcceptances(
       context({
         legal_acceptances: {
           data: [
-            { document_type: 'terms', document_version: '2.0' },
-            { document_type: 'privacy', document_version: '2.0' },
+            { document_type: 'terms', document_version: CURRENT_LEGAL_VERSIONS.terms },
+            { document_type: 'privacy', document_version: CURRENT_LEGAL_VERSIONS.privacy },
           ],
         },
       }),
