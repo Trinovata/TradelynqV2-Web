@@ -4,7 +4,13 @@
 
 Source of truth: [`../TradeLynq-Docs/v2/02-DESIGN-SYSTEM.md`](../TradeLynq-Docs/v2/02-DESIGN-SYSTEM.md) (architecture, motion, component contract) as amended by [`02A-DESIGN-R2.md`](../TradeLynq-Docs/v2/02A-DESIGN-R2.md) (colour + type values). Where the two disagree on a **value**, R2 wins; on **architecture**, 02 stands.
 
-> **Status: R2-Baseline (Candidate A "Ink & Paper" + type T2).** Locked as the working direction per D56. The final palette/type decision is **28 July 2026** via `/dev/direction` (playbook W1/S058). Because every candidate shares the same token *names*, switching is a token-value edit in one file — never a component change. Build against these values now; do not hand-tune components in anticipation of the decision.
+> **Status: R2 as amended 28 July 2026 (Gregg's accent + depth resolution).** The "Ink & Paper" base stands, with three amendments that are now LAW — do not "fix" the code back toward the older values:
+>
+> 1. **Cyan (`#00bdd6` light) is the sole interactive accent** — `--accent`/`--primary` on buttons, active nav, checkboxes, progress, tints. Navy is the *structural* ink (headings, sidebar), never the interactive colour.
+> 2. **Depth at rest** — the canvas deepened to a faintly cyan-tinted `#eef1f1` so pure-white cards float; bespoke navy-tinted elevations `--shadow-e1/e2/e3` replace Tailwind greys. Resting/empty states carry `shadow-e1` — premium cues must not be hover-conditional.
+> 3. **Type is "Caribbean Vivid"** — Bricolage Grotesque (display) + Hanken Grotesk (body) + JetBrains Mono (numerals), via `next/font/google`, zero runtime font requests. The Satoshi plan is retired.
+>
+> `app/globals.css` is the value source of truth; this file explains it. Because components consume token names only, palette evolution stays a one-file edit.
 
 ---
 
@@ -27,68 +33,73 @@ No `bg-white`, no `text-slate-700`, no `#F7F7F5`, no `dark:` overrides for colou
 
 ## 2. Colour tokens
 
-Each value is tagged by origin: **[R2]** specified in 02A §2A.2 Candidate A · **[02]** carried unchanged from 02 §2.1.1 · **[C]** constructed to fill a gap R2 left open — these are the first things to confirm on 28 July.
+Values below mirror `app/globals.css` (28 Jul amendment). If they ever disagree, the CSS wins and this file gets corrected — never the reverse.
 
 ### Light (`:root`)
 
 ```css
---background:        #F7F7F5;  /* [R2] cool off-white page */
---card:              #FFFFFF;  /* [R2] raised: cards, modals, popovers */
---card-subtle:       #F1F2F0;  /* [R2] inset: inputs, alt rows, wells */
---sidebar:           #10161F;  /* [C]  app sidebar; R2-aligned to --foreground */
+--background:        #EEF1F1;  /* canvas, faintly cyan-tinted — cards must float above it */
+--card:              #FFFFFF;  /* raised: cards, modals, popovers */
+--card-subtle:       #E6EAEA;  /* inset: inputs, alt rows, wells */
+--sidebar:           #10161F;  /* app sidebar — the structural navy */
 
---foreground:        #10161F;  /* [R2] headings — near-black navy */
---body:              #3A424E;  /* [R2] body text */
---muted:             #6B7480;  /* [R2] secondary text, placeholders */
---border:            #E4E6E4;  /* [R2] hairlines, dividers */
+--foreground:        #10161F;  /* headings — near-black navy */
+--body:              #3A424E;  /* body text */
+--muted:             #6B7480;  /* secondary text, placeholders */
+--border:            #E4E6E4;  /* hairlines, dividers */
 
---accent:            #16202E;  /* [R2] interactive navy — fills, links, active */
---accent-ink:        #16202E;  /* [R2] accent as text on light bg */
---accent-foreground: #F7F7F5;  /* [C]  text/icons ON an accent fill */
---accent-soft:       #EDEFF2;  /* [C]  selected/active tint (navy-tinted, was cyan) */
+--accent:            #00BDD6;            /* interactive CYAN — fills, active, tints */
+--accent-ink:        hsl(187 100% 27%);  /* accent as text/links (AA on paper) */
+--accent-foreground: #052932;            /* dark ink ON a cyan fill */
+--accent-soft:       hsl(187 62% 94%);   /* selected/hover cyan wash */
 
---warning:           #E09410;  /* [C]  amber, desaturated per R2 "neutral field" */
---success:           #0F9B72;  /* [C]  emerald, desaturated */
---destructive:       #DC4B4B;  /* [C]  red, desaturated */
---info:              #3E72C4;  /* [C]  blue, desaturated */
+--warning:           #E09410;  /* amber, desaturated */
+--success:           #0F9B72;  /* emerald, desaturated */
+--destructive:       #DC4B4B;  /* red, desaturated */
+--info:              #3E72C4;  /* blue, desaturated */
+--whatsapp:          #25D366;  /* recognition signal, outside the status vocabulary */
 
---ring:              #00BDD6;  /* [R2] cyan — the one cyan retention */
+--brand-cyan / --brand-amber (+ -ink)   /* V1 accents for infographic moments only */
+--ring:              #00BDD6;  /* focus ring */
+--aurora-1/2/3                 /* the living hero mist — the one atmospheric use */
+--shadow-e1/e2/e3              /* bespoke navy-tinted elevation — never Tailwind grey */
 ```
 
 ### Dark (`.dark`)
 
 ```css
---background:        #0B0F14;  /* [R2] */
---card:              #131922;  /* [R2] */
---card-subtle:       #0F151D;  /* [C]  between bg and card */
---sidebar:           #0B0F14;  /* [C]  matches background in dark */
+--background:        #0B0F14;
+--card:              #131922;
+--card-subtle:       #0F151D;
+--sidebar:           #0B0F14;
 
---foreground:        #E9EAEC;  /* [R2] never pure white */
---body:              #B8BEC7;  /* [C] */
---muted:             #7D8695;  /* [C] */
---border:            #232B37;  /* [C] */
+--foreground:        #E9EAEC;  /* never pure white */
+--body:              #B8BEC7;
+--muted:             #7D8695;
+--border:            #232B37;
 
---accent:            #D5D9DE;  /* [R2] inverted-ink buttons — light fill */
---accent-ink:        #D5D9DE;  /* [C]  accent as text on dark bg */
---accent-foreground: #0B0F14;  /* [C]  dark text ON the light accent fill */
---accent-soft:       #1C232E;  /* [C] */
+--accent:            hsl(187 88% 46%);  /* cyan lifted to carry on the deep field */
+--accent-ink:        hsl(187 85% 64%);
+--accent-foreground: #04222A;
+--accent-soft:       hsl(190 45% 15%);
 
---warning:           #D18A16;  /* [C] */
---success:           #14A882;  /* [C] */
---destructive:       #E06767;  /* [C] */
---info:              #5589D6;  /* [C] */
+--warning:           #D18A16;
+--success:           #14A882;
+--destructive:       #E06767;
+--info:              #5589D6;
 
---ring:              #00A8BF;  /* [R2] cyan, desaturated */
+--ring:              #00A8BF;
 ```
 
 ### Colour usage laws
 
-1. **`--accent` is the only interactive colour** — primary buttons, links, active states, selected controls, progress. In R2 that colour is navy, not cyan.
-2. **Cyan is reserved.** It appears in exactly three places: the focus ring (`--ring`), the logo, and the M13 success moment. Nowhere else. Cyan creeping back into fills or links is a review blocker.
+1. **`--accent` (cyan) is the only interactive colour** — primary buttons, links, active states, selected controls, progress, tints. Navy (`--foreground`/`--sidebar`) is structure and ink, never a button.
+2. **`--brand-cyan`/`--brand-amber` are infographic accents** — tickers, flow lines, coloured proof icons. Never surface colours, never body text (use the `-ink` variants for text).
 3. **`--warning`** fills exactly two jobs: pending/warning badges, and upgrade-signal CTAs. Never a primary action.
 4. **`--success`** marks verified and succeeded. Never decorative, never a CTA.
 5. **Violet is retired platform-wide** (D32). Registered Businesses differentiate by **badge, not colour**. There is no `--domain-business` token in V2.
-6. **Status mapping is global and fixed** — the same state never changes colour between surfaces:
+6. **Depth at rest:** cards on the canvas carry `shadow-e1` resting; `e2` on hover/raise; `e3` for overlays. The empty resting state is the first thing every account sees — it gets the premium cues, not just the hover state.
+7. **Status mapping is global and fixed** — the same state never changes colour between surfaces:
 
    | State | Colour |
    |---|---|
@@ -100,7 +111,7 @@ Each value is tagged by origin: **[R2]** specified in 02A §2A.2 Candidate A · 
 
 ## 3. Typography
 
-**Satoshi** for everything (self-hosted via `next/font`), **JetBrains Mono** 400/500 with `tabular-nums` for every numeral. Zero external font requests — no Fontshare, no Google Fonts.
+**"Caribbean Vivid":** **Bricolage Grotesque** carries the display voice (`font-display` — warm, humanist, a little alive); **Hanken Grotesk** is the body; **JetBrains Mono** 400/500 with `tabular-nums` for every numeral. All via `next/font/google` at build time — zero external font requests at runtime. The Satoshi plan is retired; do not reintroduce it.
 
 **Every number renders in mono:** prices, ratings, counts, quantities, IDs, table values, stat metrics, dates. This is the brand's precision signature and is not up for revision.
 
@@ -191,7 +202,20 @@ From `v2/01 §1.3`. In doubt, remove. Specifically banned:
 - Stock-photo texture where real content belongs
 - More than one primary action per view region
 
-## 8. Review checklist
+## 8. The warmth pass (D61 — "V3")
+
+Gregg's 29 Jul direction: V2's bones stay, but the front end must carry what V1 had — he is prouder of V1's feel. The audit against V1's DESIGN.md and pages found four deltas:
+
+| Delta | V1 | V2 today | Disposition |
+|---|---|---|---|
+| Canvas temperature | warm white `#F8F7F4` (sunlit) | cool cyan-tinted `#EEF1F1` | **Gregg's call** — `/dev/warmth` renders both |
+| Display weight | Satoshi **900** heroes — heavy, confident | Bricolage 500–600 ("finer type" direction) | **Gregg's call** — `/dev/warmth` renders both |
+| Information density | Thumbtack-style: counts, chips, prices everywhere | airier, more whitespace | Adopt where content is real: live counts, category chips, price signals on public surfaces. Never fake density. |
+| Colour moments | amber highlights, cyan tickers, photo-led galleries | tokens exist (`--brand-*`, aurora) and are used on the landing | Extend to category/storefront/portfolio surfaces as they close out (S113). Photos of real work are the warmest asset we have. |
+
+Rules for the pass: token- and composition-level only (no per-page hacks) · resting/empty states first (§2 law 6) · the anti-slop covenant still applies — warmth is content and craft, not decoration.
+
+## 9. Review checklist
 
 - [ ] Zero literal hex or `bg-white`/`text-slate-*`/`border-slate-*` in components
 - [ ] Renders correctly in **both** themes (not just light)
