@@ -59,9 +59,20 @@ export function formatFromPrice(amount: number | null | undefined): string {
 
 // ── Dates ────────────────────────────────────────────────────────────────────
 
+/**
+ * A date-ONLY string (`2027-03-31`) parses as UTC midnight per the ECMAScript
+ * spec, so it renders one day early everywhere west of Greenwich — Trinidad
+ * included ("30 March 2027"). Pinning local midnight keeps a calendar date a
+ * calendar date. Strings that carry a time keep their spec behaviour.
+ */
+function parseDateInput(input: Date | string): Date {
+  if (typeof input !== 'string') return input
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(input) ? `${input}T00:00:00` : input)
+}
+
 /** `19 July 2026` — day first, per Commonwealth convention. */
 export function formatDate(input: Date | string): string {
-  const date = typeof input === 'string' ? new Date(input) : input
+  const date = parseDateInput(input)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat(LOCALE, {
     day: 'numeric',
@@ -72,7 +83,7 @@ export function formatDate(input: Date | string): string {
 
 /** `19 Jul 2026` — for tables and cards where width is scarce. */
 export function formatDateShort(input: Date | string): string {
-  const date = typeof input === 'string' ? new Date(input) : input
+  const date = parseDateInput(input)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat(LOCALE, {
     day: 'numeric',
