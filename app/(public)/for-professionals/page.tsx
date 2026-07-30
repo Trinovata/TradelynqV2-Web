@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { whatsappDigits } from '@/lib/whatsapp'
 import { SUPPORT_PHONE } from '@/lib/constants/contact'
-import { TIERS, TIER_ORDER } from '@/lib/constants/pricing'
-import { formatTTD } from '@/lib/utils/format'
+import {
+  LAUNCH_PRICING,
+  PRICING_MODE,
+  REGISTRATION_FEE,
+  TIERS,
+  TIER_ORDER,
+} from '@/lib/constants/pricing'
+import { formatDate, formatTTD } from '@/lib/utils/format'
 
 /**
  * For Professionals (playbook S089, spec v2/03 §3.9, copy deck §10 — every
@@ -23,7 +29,9 @@ import { formatTTD } from '@/lib/utils/format'
 export const metadata: Metadata = {
   title: 'For Professionals — Turn your reputation into a business | TradeLynq',
   description:
-    'Create a verified storefront, collect real reviews, and receive enquiries from customers across Trinidad & Tobago. Three ways to list — from TTD $200/month.',
+    PRICING_MODE === 'launch'
+      ? 'Create a verified storefront, collect real reviews, and receive enquiries from customers across Trinidad & Tobago. Free through the launch window — one flat rate after.'
+      : 'Create a verified storefront, collect real reviews, and receive enquiries from customers across Trinidad & Tobago. Three ways to list — from TTD $200/month.',
 }
 
 /* §10.4 captions, held for the screenshot session:
@@ -32,12 +40,22 @@ export const metadata: Metadata = {
  * 3. "Invoicing — send branded quotes and invoices without leaving TradeLynq."
  */
 
+/**
+ * Price lines are regime-dependent (D62): the deck §10.3 strings describe the
+ * tiers world; launch mode states the free window and the flat rate from the
+ * constants, so this page can never contradict /pricing.
+ */
+const LAUNCH = PRICING_MODE === 'launch'
+const FREE_THROUGH = formatDate(LAUNCH_PRICING.freeUntil)
+
 const ACCOUNT_PATHS = [
   {
     title: 'Student Entrepreneur',
     who: 'Students and young adults (16–26) starting their first income stream.',
     requirements: "Proof you're 16–26 (student ID or age).",
-    priceLine: 'TTD $100 registration · 6 months of Presence free.',
+    priceLine: LAUNCH
+      ? `${formatTTD(REGISTRATION_FEE.student)} registration · free through ${FREE_THROUGH}, then ${formatTTD(LAUNCH_PRICING.studentMonthly)}/month — scholarships available.`
+      : 'TTD $100 registration · 6 months of Presence free.',
     badge: { variant: 'student' as const, label: 'Student Entrepreneur' },
     cta: 'Start free',
   },
@@ -45,7 +63,9 @@ const ACCOUNT_PATHS = [
     title: 'Small Business',
     who: 'Sole traders and informal businesses ready to be found — new or established.',
     requirements: 'A government-issued ID.',
-    priceLine: 'TTD $200 registration · plans from TTD $200/month · 50% off your first 3 months.',
+    priceLine: LAUNCH
+      ? `${formatTTD(REGISTRATION_FEE.standard)} registration · free through ${FREE_THROUGH}, then ${formatTTD(LAUNCH_PRICING.baselineMonthly)}/month.`
+      : 'TTD $200 registration · plans from TTD $200/month · 50% off your first 3 months.',
     badge: { variant: 'verified' as const, label: 'Verified Professional' },
     cta: 'Get listed',
   },
@@ -53,8 +73,9 @@ const ACCOUNT_PATHS = [
     title: 'Registered Business',
     who: 'Legally registered companies that want the strongest trust signal and more tools.',
     requirements: 'Company registration documents (or register with us).',
-    priceLine:
-      'TTD $200 registration · plan + TTD $100/month Registered rate — locked lower, permanently.',
+    priceLine: LAUNCH
+      ? `${formatTTD(REGISTRATION_FEE.standard)} registration · free through ${FREE_THROUGH}, then ${formatTTD(LAUNCH_PRICING.baselineMonthly)}/month.`
+      : 'TTD $200 registration · plan + TTD $100/month Registered rate — locked lower, permanently.',
     badge: { variant: 'registered' as const, label: 'Registered Business' },
     cta: 'Verify your company',
   },
@@ -73,7 +94,9 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How much does it cost to start?',
-    a: 'A one-time TTD $200 registration fee (TTD $100 for students), then a monthly plan from TTD $200. Your first 3 months are 50% off, and Pioneer members get 3 months free.',
+    a: LAUNCH
+      ? `A one-time ${formatTTD(REGISTRATION_FEE.standard)} registration fee (${formatTTD(REGISTRATION_FEE.student)} for students) — and that's it. Your subscription is free through ${FREE_THROUGH}; after that, one flat ${formatTTD(LAUNCH_PRICING.baselineMonthly)}/month.`
+      : 'A one-time TTD $200 registration fee (TTD $100 for students), then a monthly plan from TTD $200. Your first 3 months are 50% off, and Pioneer members get 3 months free.',
   },
   {
     q: 'How do customers find me?',
@@ -89,7 +112,9 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What's the difference between Small Business and Registered Business?",
-    a: 'A Registered Business is a legally registered company. It gets the Registered badge, ads eligibility, multi-listing, and the lower Registered rate — TTD $100/month on top of your plan, locked in permanently.',
+    a: LAUNCH
+      ? 'A Registered Business is a legally registered company. It gets the Registered badge, ads eligibility, and multi-listing — the strongest trust signal on the platform.'
+      : 'A Registered Business is a legally registered company. It gets the Registered badge, ads eligibility, multi-listing, and the lower Registered rate — TTD $100/month on top of your plan, locked in permanently.',
   },
   {
     q: 'Can I get help setting up?',
@@ -168,12 +193,33 @@ export default function ForProfessionalsPage() {
       {/* §10.6 Pricing summary + registration cross-sell */}
       <section className="mt-20">
         <div className="border-border bg-card-subtle rounded-[--radius-card] border p-6 text-center">
-          <h2 className="text-foreground font-display text-xl">Plans from TTD $200/month</h2>
-          <p className="text-muted mt-2 font-mono text-sm tabular-nums">
-            {TIER_ORDER.map((id) => `${TIERS[id].name} ${formatTTD(TIERS[id].monthly)}`).join(
-              ' · '
-            )}
-          </p>
+          {PRICING_MODE === 'launch' ? (
+            <>
+              <h2 className="text-foreground font-display text-xl">
+                Free through the launch window
+              </h2>
+              <p className="text-muted mt-2 text-sm text-pretty">
+                Every tool included, no subscription until{' '}
+                <span className="font-mono tabular-nums">
+                  {formatDate(LAUNCH_PRICING.freeUntil)}
+                </span>
+                . After that, one flat rate —{' '}
+                <span className="font-mono tabular-nums">
+                  {formatTTD(LAUNCH_PRICING.baselineMonthly)}
+                </span>
+                /month.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-foreground font-display text-xl">Plans from TTD $200/month</h2>
+              <p className="text-muted mt-2 font-mono text-sm tabular-nums">
+                {TIER_ORDER.map((id) => `${TIERS[id].name} ${formatTTD(TIERS[id].monthly)}`).join(
+                  ' · '
+                )}
+              </p>
+            </>
+          )}
           <Link
             href="/pricing"
             className="text-foreground mt-3 inline-block text-sm font-medium underline underline-offset-4"

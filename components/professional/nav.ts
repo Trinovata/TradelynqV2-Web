@@ -30,7 +30,7 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react'
-import type { FeatureKey } from '@/lib/constants/pricing'
+import { PRICING_MODE, type FeatureKey } from '@/lib/constants/pricing'
 
 export type NavItem = {
   href: string
@@ -44,7 +44,7 @@ export type NavItem = {
 
 export type NavSection = { heading: string; items: NavItem[] }
 
-export const NAV_SECTIONS: NavSection[] = [
+const ALL_SECTIONS: NavSection[] = [
   {
     heading: 'Today',
     items: [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, primary: true }],
@@ -90,6 +90,16 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
 ]
+
+/**
+ * Launch mode (D62): the credits meter is dormant, so its destination hides —
+ * filtered here, at the single source, so the sidebar, the mobile tab bar, and
+ * the more-sheet all follow from one rule.
+ */
+export const NAV_SECTIONS: NavSection[] = ALL_SECTIONS.map((section) => ({
+  ...section,
+  items: section.items.filter((item) => PRICING_MODE === 'tiers' || item.href !== '/credits'),
+})).filter((section) => section.items.length > 0)
 
 /** The four destinations that earn a permanent mobile slot (the fifth is "More"). */
 export const PRIMARY_ITEMS: NavItem[] = NAV_SECTIONS.flatMap((s) => s.items).filter(

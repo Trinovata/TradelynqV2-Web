@@ -1,11 +1,19 @@
 import type { Metadata } from 'next'
+import { LAUNCH_PRICING, PRICING_MODE, REGISTRATION_FEE } from '@/lib/constants/pricing'
+import { formatTTD, formatDate } from '@/lib/utils/format'
 import { FaqClient, type FaqGroup } from './FaqClient'
 
 /**
  * Help centre (playbook S089, spec v2/03 §3.10, copy deck §11.3 — all 16
  * Q&As verbatim). Content lives here as data; the client handles filter and
  * accordion behaviour.
+ *
+ * Money answers are regime-dependent (D62): launch mode states the free window
+ * and the flat rate from the constants; the deck's tiers-world answers return
+ * verbatim when the flag flips.
  */
+const LAUNCH = PRICING_MODE === 'launch'
+const FREE_THROUGH = formatDate(LAUNCH_PRICING.freeUntil)
 export const metadata: Metadata = {
   title: 'Help centre & FAQ | TradeLynq',
   description:
@@ -63,8 +71,10 @@ const GROUPS: FaqGroup[] = [
       },
       {
         id: 'pros-pioneer',
-        q: 'What is the Pioneer Programme?',
-        a: 'The first 180 professionals to join get three months free — full tools, no charge until month 3. Places are limited to three per category and close on 7 January 2027.',
+        q: LAUNCH ? 'Is TradeLynq really free right now?' : 'What is the Pioneer Programme?',
+        a: LAUNCH
+          ? `Yes. Every professional who joins gets the full toolset with no subscription through ${FREE_THROUGH}. The one-time registration fee is the only cost until then.`
+          : 'The first 180 professionals to join get three months free — full tools, no charge until month 3. Places are limited to three per category and close on 7 January 2027.',
       },
     ],
   },
@@ -74,17 +84,23 @@ const GROUPS: FaqGroup[] = [
       {
         id: 'pay-cost',
         q: 'What does it cost?',
-        a: 'A one-time TTD $200 registration fee (TTD $100 for students), then a plan from TTD $200/month. First three months are 50% off.',
+        a: LAUNCH
+          ? `A one-time ${formatTTD(REGISTRATION_FEE.standard)} registration fee (${formatTTD(REGISTRATION_FEE.student)} for students). Your subscription is free through ${FREE_THROUGH} — then one flat ${formatTTD(LAUNCH_PRICING.baselineMonthly)}/month, everything included. Students pay ${formatTTD(LAUNCH_PRICING.studentMonthly)}/month, with scholarships available.`
+          : 'A one-time TTD $200 registration fee (TTD $100 for students), then a plan from TTD $200/month. First three months are 50% off.',
       },
       {
         id: 'pay-registered-rate',
-        q: "What's the Registered rate?",
-        a: 'Registered Businesses pay their plan plus TTD $100/month, permanently. Sole traders pay the plan alone for six months, then plus TTD $150/month.',
+        q: LAUNCH ? 'Will pricing change later?' : "What's the Registered rate?",
+        a: LAUNCH
+          ? 'Optional plans with advanced tools, including AI assistance, arrive after launch — everything you get today stays in the flat rate, and any change comes with clear notice.'
+          : 'Registered Businesses pay their plan plus TTD $100/month, permanently. Sole traders pay the plan alone for six months, then plus TTD $150/month.',
       },
       {
         id: 'pay-how',
         q: 'How do I pay?',
-        a: 'Card payment and local options including WiPay. You set this up when your plan starts.',
+        a: LAUNCH
+          ? 'The registration fee is payable by card or local options including WiPay. Subscription billing only begins after the free window.'
+          : 'Card payment and local options including WiPay. You set this up when your plan starts.',
       },
       {
         id: 'pay-cancel',

@@ -18,10 +18,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, Lock, MessageCircle, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { TIERS, tierHasFeature, type TierId } from '@/lib/constants/pricing'
+import { PRICING_MODE, TIERS, tierHasFeature, type TierId } from '@/lib/constants/pricing'
 import { NAV_SECTIONS, PRIMARY_ITEMS, SUPPORT_WHATSAPP, type NavItem } from './nav'
 
 function isLocked(item: NavItem, tier: TierId | null): boolean {
+  // Launch mode (D62): every tier feature is open, so nothing wears a lock.
+  if (PRICING_MODE === 'launch') return false
   if (!item.requires) return false
   return !(tier && tierHasFeature(tier, item.requires))
 }
@@ -29,7 +31,9 @@ function isLocked(item: NavItem, tier: TierId | null): boolean {
 export function WorkspaceTabBar({ tier }: { tier: TierId | null }) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = React.useState(false)
-  const tierName = tier ? TIERS[tier].name : 'No plan'
+  // Launch mode has no plans to name — the label states the honest deal instead.
+  const tierName =
+    PRICING_MODE === 'launch' ? 'Free through launch' : tier ? TIERS[tier].name : 'No plan'
 
   // Any navigation dismisses the sheet — the new route is what the tap meant.
   // Adjusting during render (React's recommended pattern) rather than in an
