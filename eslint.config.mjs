@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Vendored static assets are not our code — the Draco decoder (harbour
+    // hero's mesh compression) is minified third-party WASM glue.
+    'public/**',
   ]),
 ])
 
