@@ -65,12 +65,19 @@ function assertProductionEnvAtBuild(): void {
     .map(({ name, consequence }) => `  ✗ ${name}\n      ${consequence}`)
     .join('\n')
 
-  throw new Error(
+  const message =
     `\n[TradeLynq] Production build refused — ${missing.length} required ` +
-      `environment variable(s) missing:\n\n${detail}\n\n` +
-      `Set these in the Vercel project's Production environment, then redeploy.\n` +
-      `Shipping without them would disable protections silently rather than loudly.\n`
-  )
+    `environment variable(s) missing:\n\n${detail}\n\n` +
+    `Set these in the Vercel project's Production environment, then redeploy.\n` +
+    `Shipping without them would disable protections silently rather than loudly.\n`
+
+  // Print to stderr BEFORE throwing. Next.js's config loader collapses a thrown
+  // config error to a bland "Failed to load next.config.ts", swallowing the
+  // detail — so a loud guard would arrive silent on Vercel. Writing the message
+  // first guarantees the actionable list is in the build log regardless.
+  console.error(message)
+
+  throw new Error(message)
 }
 
 assertProductionEnvAtBuild()
@@ -125,6 +132,18 @@ const connectSrc = [
   'https://*.ingest.sentry.io',
 ]
 if (isPreviewDeployment) connectSrc.push('https://vercel.live')
+// The local Supabase stack (`supabase start`) is served over http on a loopback
+// port, which `*.supabase.co` does not cover — so in development the browser
+// client cannot reach it and every sign-in, query, and realtime socket is blocked
+// by CSP. Allow the loopback origins in dev only; production never sees them.
+if (isDev) {
+  connectSrc.push(
+    'http://127.0.0.1:54321',
+    'ws://127.0.0.1:54321',
+    'http://localhost:54321',
+    'ws://localhost:54321'
+  )
+}
 
 const frameSrc = ["'self'"]
 if (isPreviewDeployment) frameSrc.push('https://vercel.live')
@@ -182,6 +201,18 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [{ source: '/(.*)', headers: SECURITY_HEADERS }]
+  },
+
+  // The canonical-merge 301s (v2/03 §3.9–3.10): V1's audience-specific guide
+  // URLs collapse into their canonical pages. Permanent, so search equity
+  // transfers rather than splits.
+  async redirects() {
+    return [
+      { source: '/for-tradespeople', destination: '/for-professionals', permanent: true },
+      { source: '/store', destination: '/merch', permanent: true },
+      { source: '/for-customers', destination: '/customer-guide', permanent: true },
+      { source: '/homeowner-guide', destination: '/customer-guide', permanent: true },
+    ]
   },
 
   images: {

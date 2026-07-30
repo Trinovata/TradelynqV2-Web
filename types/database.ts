@@ -1004,6 +1004,41 @@ export type Database = {
           },
         ]
       }
+      feedback_messages: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_referrals: {
         Row: {
           clicked_at: string
@@ -2480,6 +2515,42 @@ export type Database = {
           },
         ]
       }
+      saved_professionals: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          professional_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          professional_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_professionals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_professionals_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_messages: {
         Row: {
           cancelled_at: string | null
@@ -3205,6 +3276,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_webhook_failure: {
+        Args: { p_config_id: string; p_threshold?: number }
+        Returns: number
+      }
       claim_pioneer_place: {
         Args: { p_category_id: string; p_total_cap?: number }
         Returns: Json
@@ -3241,6 +3316,41 @@ export type Database = {
         Args: { profile_id: string }
         Returns: boolean
       }
+      professional_enquiry_inbox: {
+        Args: never
+        Returns: {
+          accepted_at: string
+          agreed_price_ttd: number
+          agreed_timeline: string
+          category_id: string
+          completed_at: string
+          contact_preference: Database["public"]["Enums"]["contact_preference"]
+          created_at: string
+          customer_first_name: string
+          declined_reason: string
+          description: string
+          id: string
+          preferred_date: string
+          professional_notes: string
+          scope_note: string
+          source: Database["public"]["Enums"]["job_source"]
+          status: Database["public"]["Enums"]["enquiry_status"]
+        }[]
+      }
+      professional_response_stats: {
+        Args: { p_professional_id: string }
+        Returns: {
+          median_minutes: number
+          sample: number
+        }[]
+      }
+      professional_subtypes: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          professional_subtype: Database["public"]["Enums"]["professional_subtype"]
+          user_id: string
+        }[]
+      }
       record_insurance_referral: {
         Args: {
           client_ip?: string
@@ -3251,6 +3361,10 @@ export type Database = {
         Returns: undefined
       }
       slugify: { Args: { input: string }; Returns: string }
+      submit_feedback: {
+        Args: { p_email?: string; p_message: string; p_name?: string }
+        Returns: undefined
+      }
       test_dblink_conninfo: { Args: never; Returns: string }
       unique_slug: {
         Args: {

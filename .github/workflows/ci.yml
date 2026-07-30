@@ -94,7 +94,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Allowlist-aware gate: high/critical fail CI, except explicitly waived
+      # dev-only advisories (each with a reason + review date in the script).
+      - run: npm run audit
 
   # ── End-to-end, conditional on secrets ─────────────────────────────────────
   # Skipped rather than failed when secrets are absent, so forks and Dependabot PRs

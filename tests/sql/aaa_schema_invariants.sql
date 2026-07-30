@@ -73,12 +73,25 @@ BEGIN
     JOIN pg_namespace n ON n.oid = c.relnamespace
    WHERE n.nspname = 'public'
      AND c.relkind = 'r'
-     AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid);
+     AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid)
+     -- Refinement (25 Jul 2026, feedback_messages): a table where NEITHER
+     -- client role holds ANY table privilege is unreachable before RLS is
+     -- consulted — policies there would be dead code. Such tables are
+     -- RPC-and-service-role-only by construction (the same posture the
+     -- feedback inbox wants: submissions via SECURITY DEFINER, reads via
+     -- admin tooling). A table with grants but no policies still fails —
+     -- that combination is the forgotten-policy bug this check exists for.
+     AND EXISTS (
+       SELECT 1 FROM information_schema.role_table_grants g
+        WHERE g.table_schema = 'public'
+          AND g.table_name = c.relname
+          AND g.grantee IN ('anon', 'authenticated')
+     );
 
   -- RLS on with no policies denies everything. That is safe but almost never
   -- intended, and it fails at runtime rather than at migration time.
   ASSERT offenders IS NULL,
-    'Tables with RLS but NO policies (everything denied): ' || offenders;
+    'Tables with RLS but NO policies (everything denied) yet grants to client roles: ' || offenders;
 
   RAISE NOTICE 'PASS 3 — every table has at least one policy';
 END $$;

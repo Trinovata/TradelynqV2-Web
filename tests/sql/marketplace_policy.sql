@@ -1327,6 +1327,167 @@ BEGIN
   RAISE NOTICE 'PASS 34 — profile templates are admin-writable only';
 END $$;
 
+-- ── 36–40. saved_professionals: the customer's private shortlist (S084) ────
+--
+-- Numbered past the cascade check below but placed before it, because the
+-- cascade check consumes the fixtures — a saved row left alive here is what
+-- proves the cascade in PASS 35.
+
+SET LOCAL request.jwt.claims TO
+  '{"sub":"bbbbbbbb-0000-0000-0000-00000000000b","role":"authenticated"}';
+
+DO $$
+DECLARE
+  visible INT;
+  rejected BOOLEAN;
+  blocked BOOLEAN;
+  msg TEXT;
+BEGIN
+  -- The toggle's on half: a customer saves for themselves.
+  INSERT INTO public.saved_professionals (customer_id, professional_id)
+  VALUES ('bbbbbbbb-0000-0000-0000-00000000000b', '11111111-1111-1111-1111-111111111111'),
+         ('bbbbbbbb-0000-0000-0000-00000000000b', '22222222-2222-2222-2222-222222222222');
+
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals;
+  ASSERT visible = 2, format('customer sees %s of their own 2 saved rows', visible);
+
+  -- Saving twice is the unique violation the API turns into the toggle's off
+  -- half — refused by the database, not by the API's good manners.
+  rejected := FALSE;
+  BEGIN
+    INSERT INTO public.saved_professionals (customer_id, professional_id)
+    VALUES ('bbbbbbbb-0000-0000-0000-00000000000b', '11111111-1111-1111-1111-111111111111');
+  EXCEPTION WHEN unique_violation THEN rejected := TRUE; END;
+  ASSERT rejected, 'a duplicate save was accepted — the toggle cannot work';
+
+  -- WITH CHECK: a save names its customer, so a forged one plants entries in
+  -- someone else's list.
+  blocked := FALSE;
+  BEGIN
+    INSERT INTO public.saved_professionals (customer_id, professional_id)
+    VALUES ('eeeeeeee-0000-0000-0000-00000000000e', '11111111-1111-1111-1111-111111111111');
+  EXCEPTION WHEN insufficient_privilege THEN blocked := TRUE; END;
+  ASSERT blocked, 'SECURITY HOLE: a save was planted in another customer''s list';
+
+  -- No update path exists, so no UPDATE grant exists. This assertion is
+  -- deliberately inverted from the suite's trap-1 rule: the grant failure IS
+  -- the expected refusal — there is no trigger behind it to reach.
+  blocked := FALSE;
+  BEGIN
+    UPDATE public.saved_professionals SET created_at = NOW() - INTERVAL '30 days'
+     WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b';
+  EXCEPTION WHEN insufficient_privilege THEN
+    blocked := TRUE; GET STACKED DIAGNOSTICS msg = MESSAGE_TEXT;
+  END;
+  ASSERT blocked, 'a saved row was edited — no update path should exist';
+  ASSERT msg LIKE '%permission denied for table%',
+    'expected the missing UPDATE grant to refuse this, got: ' || msg;
+
+  RAISE NOTICE 'PASS 36 — saves are own-customer-only, unique per pair, and unwritable';
+END $$;
+
+-- A nosy customer sees nothing and deletes nothing.
+
+SET LOCAL request.jwt.claims TO
+  '{"sub":"eeeeeeee-0000-0000-0000-00000000000e","role":"authenticated"}';
+
+DO $$
+DECLARE
+  visible INT;
+  affected INT;
+BEGIN
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals;
+  ASSERT visible = 0,
+    format('PRIVACY LEAK: an unrelated customer saw %s saved rows', visible);
+
+  DELETE FROM public.saved_professionals
+   WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  ASSERT affected = 0, 'RLS leak: a stranger deleted another customer''s saved rows';
+
+  RAISE NOTICE 'PASS 37 — a shortlist is invisible and untouchable to other customers';
+END $$;
+
+-- The professional sees ZERO saves targeting them — flag F2. Unlike
+-- connections (their lead list), no spec grants save visibility to the
+-- professional; a save is the customer's private bookmark.
+
+SET LOCAL request.jwt.claims TO
+  '{"sub":"aaaaaaaa-0000-0000-0000-00000000000a","role":"authenticated"}';
+
+DO $$
+DECLARE
+  visible INT;
+BEGIN
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals
+   WHERE professional_id = '11111111-1111-1111-1111-111111111111';
+  ASSERT visible = 0,
+    format('PRIVACY LEAK (F2): a professional saw %s saves targeting them', visible);
+
+  RAISE NOTICE 'PASS 38 — professionals cannot see who saved them (F2)';
+END $$;
+
+-- Admin oversight, and the toggle's off half: the customer deletes their own.
+
+SET LOCAL request.jwt.claims TO
+  '{"sub":"dddddddd-0000-0000-0000-00000000000d","role":"authenticated"}';
+
+DO $$
+DECLARE
+  visible INT;
+BEGIN
+  -- Scoped to the fixture customer, not the whole table — dev seed data may
+  -- coexist (the section-35 lesson: count local rows to prove a local fact).
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals
+   WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b';
+  ASSERT visible = 2, format('admin oversight sees %s of the fixture''s 2 saved rows', visible);
+END $$;
+
+SET LOCAL request.jwt.claims TO
+  '{"sub":"bbbbbbbb-0000-0000-0000-00000000000b","role":"authenticated"}';
+
+DO $$
+DECLARE
+  affected INT;
+  visible INT;
+BEGIN
+  DELETE FROM public.saved_professionals
+   WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b'
+     AND professional_id = '22222222-2222-2222-2222-222222222222';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  ASSERT affected = 1, 'a customer could not un-save their own row';
+
+  -- One row (bbbb → Ravi) deliberately survives into the cascade check below.
+  SELECT COUNT(*) INTO visible FROM public.saved_professionals;
+  ASSERT visible = 1, format('expected 1 surviving saved row, got %s', visible);
+
+  RAISE NOTICE 'PASS 39 — admins may audit; the customer''s own delete is the un-save';
+END $$;
+
+-- Anon: a shortlist reveals who a customer is considering hiring. No grant,
+-- no policy — denied at both layers.
+
+SET LOCAL ROLE anon;
+SET LOCAL request.jwt.claims TO '{}';
+
+DO $$
+DECLARE
+  visible INT;
+  denied BOOLEAN := FALSE;
+BEGIN
+  BEGIN
+    SELECT COUNT(*) INTO visible FROM public.saved_professionals;
+  EXCEPTION WHEN insufficient_privilege THEN denied := TRUE; END;
+
+  IF NOT denied THEN
+    ASSERT visible = 0, format('PRIVACY LEAK: anon can read %s saved rows', visible);
+  END IF;
+
+  RAISE NOTICE 'PASS 40 — saved rows are unreachable anonymously';
+END $$;
+
+SET LOCAL ROLE authenticated;
+
 -- ── 35. Closing an account does not break the database ─────────────────────
 --
 -- This check exists because writing it found a real defect. Immutability
@@ -1347,6 +1508,7 @@ DO $$
 DECLARE
   notes_left INT;
   reviews_left INT;
+  saved_left INT;
   fixture_profile UUID;
 BEGIN
   -- Scoped to this suite's own fixture rather than counting the whole table.
@@ -1382,10 +1544,19 @@ BEGIN
     FROM public.case_notes n
    WHERE NOT EXISTS (SELECT 1 FROM public.disputes d WHERE d.id = n.dispute_id);
 
+  -- The surviving saved row (PASS 39) references both the customer and the
+  -- professional; either cascade alone should have removed it.
+  SELECT COUNT(*) INTO saved_left
+    FROM public.saved_professionals
+   WHERE customer_id = 'bbbbbbbb-0000-0000-0000-00000000000b'
+      OR professional_id = fixture_profile;
+
   ASSERT notes_left = 0,
     format('cascade left %s orphaned case notes behind', notes_left);
   ASSERT reviews_left = 0,
     format('cascade left %s orphaned reviews behind', reviews_left);
+  ASSERT saved_left = 0,
+    format('cascade left %s orphaned saved rows behind', saved_left);
 
   RAISE NOTICE 'PASS 35 — closing customer, professional, and admin accounts cascades cleanly';
 END $$;
