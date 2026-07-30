@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { Users, Sparkles, MessageCircle } from 'lucide-react'
 import { requireProfessional } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
-import { tierHasFeature, lowestTierWith, TIERS } from '@/lib/constants/pricing'
+import { tierHasFeature, lowestTierWith, PRICING_MODE, TIERS } from '@/lib/constants/pricing'
 import { getClients } from '@/lib/crm/queries'
 import { EmptyState } from '@/components/ui/States'
 import { Button } from '@/components/ui/Button'
@@ -22,8 +22,9 @@ export default async function ClientsPage() {
   if (!access.ok) redirect(loginRedirect('/clients'))
 
   // Gate WITH a real teaser (spec §5.7): lower tiers see what the CRM does and
-  // how to unlock it, not a bare 403.
-  if (!access.tier || !tierHasFeature(access.tier, 'crm')) {
+  // how to unlock it, not a bare 403. Launch mode (D62) opens the CRM to every
+  // professional — the teaser waits with the rest of the tier machinery.
+  if (PRICING_MODE === 'tiers' && (!access.tier || !tierHasFeature(access.tier, 'crm'))) {
     const needed = lowestTierWith('crm')
     return <CrmTeaser requiredTierName={needed ? TIERS[needed].name : 'Studio'} />
   }

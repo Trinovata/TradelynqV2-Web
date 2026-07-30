@@ -7,9 +7,12 @@ import { createBearerClient } from '@/lib/supabase/bearer'
 import { err } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
 import {
+  launchFeatureAvailable,
   lowestTierWith,
+  PRICING_MODE,
   tierHasFeature,
   type FeatureKey,
+  type PricingMode,
   type TierId,
 } from '@/lib/constants/pricing'
 import type { Database } from '@/types/database'
@@ -492,8 +495,20 @@ export async function requireCustomerConnectionGate(
  */
 export function requireTierFeature(
   context: ProfessionalContext,
-  feature: FeatureKey
+  feature: FeatureKey,
+  // Injectable so tests can pin either regime; call sites take the platform mode.
+  mode: PricingMode = PRICING_MODE
 ): AccessResult<ProfessionalContext> {
+  // Launch mode (D62): every tier feature is open to every professional except
+  // the AI business tools, which nothing unlocks yet. No tier check and no
+  // PAYMENT_REQUIRED — during the free window there is nothing to pay.
+  if (mode === 'launch') {
+    if (!launchFeatureAvailable(feature)) {
+      return { ok: false, response: err('FEATURE_NOT_YET_AVAILABLE', { feature }) }
+    }
+    return context
+  }
+
   // No active subscription is a payment problem, not a tier problem, and the
   // fix is different — so the code is different.
   if (!context.tier) {

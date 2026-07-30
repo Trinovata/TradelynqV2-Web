@@ -23,6 +23,11 @@ import {
   lowestTierWith,
   creditUnitCost,
   isPriceFrom,
+  PRICING_MODE,
+  LAUNCH_PRICING,
+  launchMonthly,
+  launchFeatureAvailable,
+  isSubscriptionFree,
   type TierId,
 } from '@/lib/constants/pricing'
 
@@ -265,5 +270,48 @@ describe('billing period ladder (25 Jul 2026 directive)', () => {
         expect(diff).toBeLessThan(p.months)
       }
     }
+  })
+})
+
+// ── Launch mode (D62, 29 July 2026) ──────────────────────────────────────────
+
+describe('launch mode — flat baseline, free window, AI tools withheld', () => {
+  it('runs in launch mode', () => {
+    // The platform's active regime. Deliberate flip only — see D62.
+    expect(PRICING_MODE).toBe('launch')
+  })
+
+  it('pins the launch values: $200 baseline, $50 student, free until 31 Mar 2027', () => {
+    expect(LAUNCH_PRICING.baselineMonthly).toBe(200)
+    expect(LAUNCH_PRICING.studentMonthly).toBe(50)
+    expect(LAUNCH_PRICING.freeUntil).toBe('2027-03-31')
+  })
+
+  it('everyone but students pays the flat baseline — the crossover sleeps', () => {
+    expect(launchMonthly('sole_trader')).toBe(200)
+    expect(launchMonthly('registered')).toBe(200)
+  })
+
+  it('students pay the student rate, or nothing on scholarship', () => {
+    expect(launchMonthly('student')).toBe(50)
+    expect(launchMonthly('student', { scholarship: true })).toBe(0)
+    // Scholarship is a student concept only; other tracks ignore it.
+    expect(launchMonthly('registered', { scholarship: true })).toBe(200)
+  })
+
+  it('the free window includes its last day in Trinidad time and not the day after', () => {
+    // 31 Mar 2027 23:00 in Trinidad (UTC-4) = 1 Apr 03:00 UTC — still free.
+    expect(isSubscriptionFree(new Date('2027-04-01T03:00:00.000Z'))).toBe(true)
+    // 1 Apr 2027 00:00 in Trinidad = 04:00 UTC — billing has begun.
+    expect(isSubscriptionFree(new Date('2027-04-01T04:00:00.000Z'))).toBe(false)
+    // Launch day is comfortably inside the window.
+    expect(isSubscriptionFree(new Date('2026-09-07T12:00:00.000Z'))).toBe(true)
+  })
+
+  it('withholds exactly the AI meter and nothing else', () => {
+    expect(launchFeatureAvailable('tool_credits')).toBe(false)
+    expect(launchFeatureAvailable('crm')).toBe(true)
+    expect(launchFeatureAvailable('webhooks')).toBe(true)
+    expect(launchFeatureAvailable('n8n')).toBe(true)
   })
 })

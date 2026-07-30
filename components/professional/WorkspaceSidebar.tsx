@@ -20,7 +20,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Lock, MessageCircle, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
-import { TIERS, tierHasFeature, type TierId } from '@/lib/constants/pricing'
+import { PRICING_MODE, TIERS, tierHasFeature, type TierId } from '@/lib/constants/pricing'
 import { Avatar } from '@/components/ui/Avatar'
 import { NAV_SECTIONS, SUPPORT_WHATSAPP, type NavItem } from './nav'
 
@@ -33,6 +33,8 @@ export type WorkspaceInfo = {
 }
 
 function isLocked(item: NavItem, tier: TierId | null): boolean {
+  // Launch mode (D62): every tier feature is open, so nothing wears a lock.
+  if (PRICING_MODE === 'launch') return false
   if (!item.requires) return false
   return !(tier && tierHasFeature(tier, item.requires))
 }
@@ -45,7 +47,9 @@ export function WorkspaceSidebar({
   workspace: WorkspaceInfo
 }) {
   const pathname = usePathname()
-  const tierName = tier ? TIERS[tier].name : 'No plan'
+  // Launch mode has no plans to name — the label states the honest deal instead.
+  const tierName =
+    PRICING_MODE === 'launch' ? 'Free through launch' : tier ? TIERS[tier].name : 'No plan'
 
   return (
     <aside className="bg-sidebar hidden w-[264px] shrink-0 flex-col lg:flex">
@@ -128,15 +132,18 @@ export function WorkspaceSidebar({
             View storefront
           </a>
         )}
-        <Link
-          href="/credits"
-          className="hover:bg-sidebar-hover flex items-center justify-between rounded-[--radius-control] px-2.5 py-2 text-sm transition-colors"
-        >
-          <span className="text-white/55">Credits</span>
-          <span className="font-mono text-sm font-medium text-white/90 tabular-nums">
-            {workspace.credits ?? '—'}
-          </span>
-        </Link>
+        {/* Credits are dormant in launch mode (D62) — the row returns with the meter. */}
+        {PRICING_MODE === 'tiers' && (
+          <Link
+            href="/credits"
+            className="hover:bg-sidebar-hover flex items-center justify-between rounded-[--radius-control] px-2.5 py-2 text-sm transition-colors"
+          >
+            <span className="text-white/55">Credits</span>
+            <span className="font-mono text-sm font-medium text-white/90 tabular-nums">
+              {workspace.credits ?? '—'}
+            </span>
+          </Link>
+        )}
         <a
           href={SUPPORT_WHATSAPP}
           target="_blank"

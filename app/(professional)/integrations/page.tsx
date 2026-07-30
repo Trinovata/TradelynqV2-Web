@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { Workflow, Sparkles } from 'lucide-react'
 import { requireProfessional } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
-import { tierHasFeature, lowestTierWith, TIERS } from '@/lib/constants/pricing'
+import { tierHasFeature, lowestTierWith, PRICING_MODE, TIERS } from '@/lib/constants/pricing'
 import { Button } from '@/components/ui/Button'
 import { BlurFade } from '@/components/ui/blur-fade'
 import {
@@ -23,8 +23,9 @@ export default async function IntegrationsPage() {
   if (!access.ok) redirect(loginRedirect('/integrations'))
 
   // Gate WITH a real teaser: lower tiers see what automation unlocks and the
-  // upgrade path, not a bare 403.
-  if (!access.tier || !tierHasFeature(access.tier, 'webhooks')) {
+  // upgrade path, not a bare 403. Launch mode (D62) opens webhooks to every
+  // professional, matching the requireTierFeature short-circuit the API takes.
+  if (PRICING_MODE === 'tiers' && (!access.tier || !tierHasFeature(access.tier, 'webhooks'))) {
     const needed = lowestTierWith('webhooks')
     return <IntegrationsTeaser requiredTierName={needed ? TIERS[needed].name : 'Enterprise'} />
   }
