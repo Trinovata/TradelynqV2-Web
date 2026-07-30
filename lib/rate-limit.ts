@@ -65,6 +65,7 @@ export type LimiterKey =
   | 'search'
   | 'chatbot'
   | 'feedback'
+  | 'store_order'
   | 'ai_tool'
 
 type LimiterConfig = {
@@ -145,6 +146,20 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     rationale:
       'Spam to professionals. Genuine users rarely exceed this; degrade open to protect conversion.',
   },
+  store_order: {
+    limit: 5,
+    windowSeconds: 3600,
+    failureMode: 'open',
+    rationale:
+      'Merch orders are hand-fulfilled and billed off-app after human confirmation, so a junk order costs admin minutes, never money. Five an hour absorbs any genuine buyer; degrade open — a blocked real order is lost revenue.',
+  },
+  feedback: {
+    limit: 5,
+    windowSeconds: 3600,
+    failureMode: 'open',
+    rationale:
+      'The /feedback form is open to signed-out visitors and writes a row per submission — the only threat is junk volume in the admin inbox. Nobody sends five genuine reports an hour (tightened from the original 5/60 when the form shipped); degrade open because losing a real bug report costs more than absorbing spam.',
+  },
   review: {
     limit: 2,
     windowSeconds: 60,
@@ -163,13 +178,7 @@ export const LIMITERS: Record<LimiterKey, LimiterConfig> = {
     windowSeconds: 60,
     failureMode: 'open',
     rationale:
-      'Model spend per session. Bounded by credits too, so degrading open is not unbounded cost.',
-  },
-  feedback: {
-    limit: 5,
-    windowSeconds: 60,
-    failureMode: 'open',
-    rationale: 'Inbox spam. Low blast radius.',
+      'Model spend on a public anonymous route — nothing else bounds it (tool credits gate ai_tool, not this widget). Degrades open at the limiter so the widget stays answerable, but the ROUTE serves the zero-cost static fallback whenever the check is degraded: availability keeps, live model calls are never unmetered.',
   },
   ai_tool: {
     limit: 20,

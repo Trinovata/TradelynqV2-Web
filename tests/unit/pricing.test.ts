@@ -13,8 +13,12 @@ import {
   PIONEER,
   REGISTRATION_FEE,
   CREDIT_BUNDLES,
+  BILLING_PERIODS,
   accountSurcharge,
   monthlyTotal,
+  periodPerMonth,
+  periodSavings,
+  periodTotal,
   tierHasFeature,
   lowestTierWith,
   creditUnitCost,
@@ -227,6 +231,39 @@ describe('credit bundles', () => {
       const previous = creditUnitCost(CREDIT_BUNDLES[i - 1]!)
       const current = creditUnitCost(CREDIT_BUNDLES[i]!)
       expect(current).toBeLessThan(previous)
+    }
+  })
+})
+
+describe('billing period ladder (25 Jul 2026 directive)', () => {
+  it('12 months is exactly two months free, on clean TTD', () => {
+    // Total-first arithmetic: monthly × 10, no rounding drift.
+    expect(periodTotal('growth', 12)).toBe(TIERS.growth.monthly * 10)
+    expect(periodSavings('growth', 12)).toBe(TIERS.growth.monthly * 2)
+  })
+
+  it('the ladder is monotonic — a longer commitment is never a worse rate', () => {
+    for (const id of TIER_ORDER) {
+      const rates = BILLING_PERIODS.map((p) => periodPerMonth(id, p.months))
+      for (let i = 1; i < rates.length; i++) {
+        expect(rates[i]).toBeLessThanOrEqual(rates[i - 1]!)
+      }
+    }
+  })
+
+  it('monthly is the undiscounted base', () => {
+    for (const id of TIER_ORDER) {
+      expect(periodTotal(id, 1)).toBe(TIERS[id].monthly)
+      expect(periodSavings(id, 1)).toBe(0)
+    }
+  })
+
+  it('totals reconcile: per-month × months ≈ total within rounding', () => {
+    for (const id of TIER_ORDER) {
+      for (const p of BILLING_PERIODS) {
+        const diff = Math.abs(periodPerMonth(id, p.months) * p.months - periodTotal(id, p.months))
+        expect(diff).toBeLessThan(p.months)
+      }
     }
   })
 })

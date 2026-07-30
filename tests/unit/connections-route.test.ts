@@ -136,6 +136,11 @@ function mockSupabase(options: Options) {
   }
 
   createClientMock.mockResolvedValue(client)
+  // The post-gate contact read (step 8) goes through the admin client since
+  // 20260724000001 withheld contact columns from `authenticated`. The same
+  // fake serves both: professional_profiles reads already carry the contact
+  // fields, and the admin path is only ever reached after the gate passes.
+  createAdminClientMock.mockReturnValue(client)
 }
 
 function revealRequest(body: unknown = { professional_id: PROFESSIONAL_ID }) {

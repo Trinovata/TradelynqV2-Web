@@ -334,7 +334,9 @@ export type LegalDocument = (typeof LEGAL_DOCUMENTS)[number]
 
 export const CURRENT_LEGAL_VERSIONS: Readonly<Record<LegalDocument, string>> = {
   privacy: '2.0',
-  terms: '2.0',
+  // 2.1 (25 Jul 2026): the §3.2A refunds section — every existing acceptance
+  // is for 2.0, so the gate re-prompts platform-wide by design.
+  terms: '2.1',
   eula: '1.0',
   reviews: '1.0',
 } as const

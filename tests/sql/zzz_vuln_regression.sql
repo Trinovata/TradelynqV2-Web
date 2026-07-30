@@ -370,6 +370,82 @@ BEGIN
   RAISE NOTICE 'PASS 8 — grant matching resists LIKE injection, wildcards still work';
 END $$;
 
+-- ============================================================================
+-- CRITICAL 9 — authenticated stranger reading gated contact columns
+-- ============================================================================
+-- Original (found at the S080 close-out, 24 Jul 2026): 20260719000005 fixed
+-- the anon leak with a column allow-list but left `authenticated` holding
+-- table-wide SELECT, deferring redaction to "the API's job". The anon key
+-- ships in every bundle and a session is free to mint, so ANY signed-in JWT
+-- could PostgREST-select contact_phone / contact_whatsapp / home_address on
+-- every active listing — bypassing the connection gate, the platform's whole
+-- monetisation boundary. Closed by 20260724000001: both client roles now hold
+-- the identical column allow-list.
+
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub":"7b000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
+
+DO $$
+DECLARE
+  leaked TEXT;
+  denied BOOLEAN;
+  name_read TEXT;
+BEGIN
+  FOREACH leaked IN ARRAY ARRAY[
+    'national_id_url', 'national_id_back_url', 'selfie_url', 'date_of_birth',
+    'home_address', 'insurance_policy_number', 'contact_phone', 'contact_whatsapp'
+  ] LOOP
+    denied := FALSE;
+    BEGIN
+      EXECUTE format('SELECT %I FROM public.professional_profiles LIMIT 1', leaked);
+    EXCEPTION WHEN insufficient_privilege THEN
+      denied := TRUE;
+    END;
+
+    ASSERT denied,
+      format('CRITICAL REGRESSION: authenticated can read professional_profiles.%s — '
+             || 'the connection gate is bypassable by any signed-in JWT. '
+             || 'The grant must match the anon allow-list (20260724000001).', leaked);
+  END LOOP;
+
+  -- The marketplace must still render for signed-in viewers. A fix that blinds
+  -- them is a different outage, not a fix.
+  SELECT business_name INTO name_read
+    FROM public.professional_profiles
+   WHERE id = '7aaaaaaa-0000-0000-0000-00000000aaa1';
+  ASSERT name_read = 'Victim Services',
+    'REGRESSION: the column-scoped grant blinded signed-in viewers to public columns';
+
+  RAISE NOTICE 'PASS 9 — authenticated stranger cannot read contact/PII columns; public columns render';
+END $$;
+
+-- The grant is role-wide, so even the OWNER's RLS-client read is refused —
+-- self-reads of contact columns are server-side (admin client) by design
+-- (20260724000001 header: a future client-side self-read gets a self-scoped
+-- SECURITY DEFINER RPC, never a wider grant). This pins that decision.
+SET LOCAL request.jwt.claims TO
+  '{"sub":"7a000000-0000-0000-0000-0000000000a1","role":"authenticated"}';
+
+DO $$
+DECLARE
+  denied BOOLEAN := FALSE;
+BEGIN
+  BEGIN
+    PERFORM contact_phone FROM public.professional_profiles
+     WHERE user_id = '7a000000-0000-0000-0000-0000000000a1';
+  EXCEPTION WHEN insufficient_privilege THEN
+    denied := TRUE;
+  END;
+
+  ASSERT denied,
+    'DESIGN DRIFT: the owner read contact_phone through the RLS client — '
+    || 'if a client-side self-read is now required, add a self-scoped '
+    || 'SECURITY DEFINER RPC (20260724000001 header), never a wider grant.';
+
+  RAISE NOTICE 'PASS 9b — contact columns are server-read only, even for the owner';
+END $$;
+
 ROLLBACK;
 
 \echo ''

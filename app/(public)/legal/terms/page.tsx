@@ -11,7 +11,7 @@ export default function TermsOfServicePage() {
   return (
     <>
       <h2 className="text-brand-slate mt-0 text-2xl font-bold">Terms of Service</h2>
-      <p className="text-muted text-sm">Effective date: 25 February 2026 · Version 2.0</p>
+      <p className="text-muted text-sm">Effective date: 25 July 2026 · Version 2.1</p>
 
       <p>
         Please read these Terms of Service ("<strong>Terms</strong>") carefully before using
@@ -85,11 +85,39 @@ export default function TermsOfServicePage() {
       <p>
         New Professionals receive <strong>50% off their subscription for the first 3 months</strong>{' '}
         — the promotional rate applies automatically at checkout. After the promotional period, the
-        standard monthly rate resumes. Payments are processed by First Atlantic Commerce Ltd.
-        Subscriptions may be cancelled at any time; your Listing remains active until the end of the
-        current billing period. <strong>No refunds</strong> are issued for partial months after a
-        billing period has started.
+        standard rate resumes. Subscriptions are billed for the package term you select — monthly,
+        or discounted 3-, 6-, or 12-month packages billed at the start of the term. Payments are
+        processed by First Atlantic Commerce Ltd. Subscriptions may be cancelled at any time; your
+        Listing remains active until the end of the current billing period.
       </p>
+
+      <h4>3.2A Refunds</h4>
+      {/* Added 25 Jul 2026 (v2.1) at Gregg's direction. FLAG: pending attorney
+          review with the rest of the legal set (W19) — the substance is the
+          directive's; the drafting is interim. */}
+      <p>
+        <strong>Refunds are not typically issued.</strong> Subscription fees, package fees, and the
+        registration fee pay for Listing visibility and platform tools that are provided
+        immediately, and <strong>no refunds</strong> are issued for partial months or partially
+        elapsed package terms once a billing cycle has started.
+      </p>
+      <ul>
+        <li>
+          Where TradeLynq, at its sole discretion, grants a refund, it becomes available only{' '}
+          <strong>after your first billing cycle has completed</strong> and is capped at{' '}
+          <strong>50% of the total amount paid</strong> for the package concerned.
+        </li>
+        <li>
+          A refund request submitted <strong>between billing cycles</strong> operates as a
+          cancellation for the cycle in progress: amounts paid for{' '}
+          <strong>past and current cycles are forfeited</strong>, and any discretionary refund is
+          assessed only against unstarted, prepaid cycles remaining in the package.
+        </li>
+        <li>
+          Nothing in this section limits any non-waivable rights you hold under the consumer
+          protection laws of Trinidad &amp; Tobago.
+        </li>
+      </ul>
 
       <h4>3.3 Professional conduct</h4>
       <p>Professionals must:</p>

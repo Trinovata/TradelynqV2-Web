@@ -1004,6 +1004,41 @@ export type Database = {
           },
         ]
       }
+      feedback_messages: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          message: string
+          name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          message?: string
+          name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insurance_referrals: {
         Row: {
           clicked_at: string
@@ -3241,6 +3276,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_webhook_failure: {
+        Args: { p_config_id: string; p_threshold?: number }
+        Returns: number
+      }
       claim_pioneer_place: {
         Args: { p_category_id: string; p_total_cap?: number }
         Returns: Json
@@ -3298,6 +3337,13 @@ export type Database = {
           status: Database["public"]["Enums"]["enquiry_status"]
         }[]
       }
+      professional_response_stats: {
+        Args: { p_professional_id: string }
+        Returns: {
+          median_minutes: number
+          sample: number
+        }[]
+      }
       professional_subtypes: {
         Args: { p_user_ids: string[] }
         Returns: {
@@ -3315,6 +3361,11 @@ export type Database = {
         Returns: undefined
       }
       slugify: { Args: { input: string }; Returns: string }
+      submit_feedback: {
+        Args: { p_email?: string; p_message: string; p_name?: string }
+        Returns: undefined
+      }
+      test_dblink_conninfo: { Args: never; Returns: string }
       unique_slug: {
         Args: {
           base_text: string

@@ -11,12 +11,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:policies": "node scripts/test-policies.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:update": "playwright test --update-snapshots",
     "lint:lexicon": "node scripts/lint-lexicon.mjs",
     "verify": "npm run typecheck && npm run lint && npm run lint:lexicon && npm run format:check && npm run test && npm run test:policies",
     "db:reset": "supabase db reset",
     "db:seed": "node scripts/seed-dev.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "audit": "node scripts/audit-gate.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -58,12 +62,13 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
-    "eslint": "^9",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.2.10",
     "prettier": "^3.9.5",
     "prettier-plugin-tailwindcss": "^0.8.1",
