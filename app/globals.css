@@ -23,27 +23,34 @@
 /* ── Light: the default (R2 "Ink & Paper") ──────────────────────────────── */
 
 :root {
-  /* Surfaces */
-  --background: #f7f7f5;
+  /* Surfaces — V1's warm white canvas returns per D67 ("slightly warm,
+     replaces pure white"). Cards stay pure white and keep the e1 resting
+     shadow, so the float survives the warmer, closer canvas. */
+  --background: #f8f7f4;
   --card: #ffffff;
-  --card-subtle: #f1f2f0;
-  --sidebar: #10161f;
+  --card-subtle: #f8fafc;
+  --sidebar: #1b2637;
 
-  /* Ink */
-  --foreground: #10161f;
-  --body: #3a424e;
-  --muted: #6b7480;
-  --border: #e4e6e4;
+  /* Ink — V1's navy + slate ramp. */
+  --foreground: #1b2637;
+  --body: #334155;
+  --muted: #64748b;
+  --border: #e2e8f0;
 
-  /* Interactive — navy in R2, not cyan */
-  --accent: #16202e;
-  --accent-ink: #16202e;
-  --accent-foreground: #f7f7f5;
-  --accent-soft: #edeff2;
+  /* Interactive — CYAN brought forward as the brand accent (Gregg, 28 Jul:
+     "a bit more of the cyan"). Fills are the vibrant brand cyan with dark
+     ink text (high contrast, premium); accented TEXT/links use the darker
+     cyan-ink (AA on paper); soft is a cyan wash for selected/hover states —
+     so cyan now appears on every button, active tab, and tint. Headings and
+     body stay navy (--foreground) for readability. */
+  --accent: #00bdd6;
+  --accent-ink: hsl(187 100% 27%);
+  --accent-foreground: #052932;
+  --accent-soft: hsl(187 62% 94%);
 
-  /* Meaning. Desaturated to sit in a neutral field. */
-  --warning: #e09410;
-  --success: #0f9b72;
+  /* Meaning — V1's fuller-chroma values return per D67. */
+  --warning: #f59f0a;
+  --success: #10b981;
   --destructive: #dc4b4b;
   --info: #3e72c4;
 
@@ -89,7 +96,7 @@
   --chart-3: var(--success);
   --chart-4: var(--brand-amber);
   --chart-5: var(--destructive);
-  --sidebar-foreground: var(--accent-foreground);
+  --sidebar-foreground: #f7f7f5; /* explicit light — decoupled from accent-foreground now that accent is cyan */
   --sidebar-primary: var(--brand-cyan);
   --sidebar-primary-foreground: var(--foreground);
   --sidebar-accent: var(--accent-soft);
@@ -111,11 +118,13 @@
   --muted: #7d8695;
   --border: #232b37;
 
-  /* Inverted ink: a LIGHT accent, so accent-foreground goes dark. */
-  --accent: #d5d9de;
-  --accent-ink: #d5d9de;
-  --accent-foreground: #0b0f14;
-  --accent-soft: #1c232e;
+  /* Cyan accent on the dark ink — lifted so it carries on the deep field;
+     fills keep dark text, accented text uses the light cyan-ink, soft is a
+     deep cyan tint. */
+  --accent: hsl(187 88% 46%);
+  --accent-ink: hsl(187 85% 64%);
+  --accent-foreground: #04222a;
+  --accent-soft: hsl(190 45% 15%);
 
   --warning: #d18a16;
   --success: #14a882;
@@ -194,40 +203,53 @@
   --color-aurora-2: var(--aurora-2);
   --color-aurora-3: var(--aurora-3);
 
-  /* Real, shippable faces (self-hosted at build by next/font — zero external
-     requests). Bricolage Grotesque for display: warm, humanist, a little
-     characterful — it carries the "alive" of Caribbean Vivid without being an
-     AI-tell display font. Hanken Grotesk for body: clean, friendly, legible at
-     small sizes. JetBrains Mono keeps the tabular numerals the design law wants. */
-  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: var(--font-bricolage), var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  /* D67 — Satoshi returns as the single brand face, exactly as V1 ran it,
+     self-hosted from V1's Fontshare kit via next/font/local (zero external
+     requests). One face for display AND body keeps the system unified and the
+     load fast — V1's own rationale. JetBrains Mono keeps the tabular numerals. */
+  --font-sans: var(--font-satoshi), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* Radius law — nested is always parent minus gap, never equal. */
-  --radius-tag: 4px;
-  --radius-control: 8px;
-  --radius-card: 12px;
-  --radius-panel: 16px;
+  /* Radius law — nested is always parent minus gap, never equal.
+     Softened 26 Jul 2026 for a more premium, modern feel (research: Linear /
+     Stripe / Vercel sit ~10–18px). Token-driven, so all 44 surfaces lift at
+     once — never hand-tuned per component. */
+  --radius-tag: 6px;
+  --radius-control: 10px;
+  --radius-card: 14px;
+  --radius-panel: 18px;
 
-  /* Type scale, T2: display weights 500–600, sizes +10%, tighter leading. */
+  /* Elevation scale — the premium gap the system was missing. Shadows are
+     TINTED with the brand navy (16 22 31), never pure black (color research:
+     tint toward the brand hue, black never appears in nature), and layered
+     (a tight contact shadow + a soft ambient one) the way real light falls.
+     e1 resting card · e2 hover/raised · e3 popover/modal. */
+  --shadow-e1: 0 1px 2px -1px rgb(16 22 31 / 0.06), 0 2px 6px -2px rgb(16 22 31 / 0.08);
+  --shadow-e2: 0 2px 4px -2px rgb(16 22 31 / 0.08), 0 10px 28px -14px rgb(16 22 31 / 0.24);
+  --shadow-e3: 0 4px 8px -4px rgb(16 22 31 / 0.1), 0 20px 48px -20px rgb(16 22 31 / 0.32);
+
+  /* Type scale — V1 weights restored per D67: heroes at Satoshi 900 (strong at
+     large sizes without feeling cold — V1's own words), titles 700, sections
+     600. Sizes keep the T2 ramp. */
   --text-display-2xl: clamp(2.75rem, 6.5vw, 4.125rem);
   --text-display-2xl--line-height: 1.05;
   --text-display-2xl--letter-spacing: -0.02em;
-  --text-display-2xl--font-weight: 500;
+  --text-display-2xl--font-weight: 900;
 
   --text-display-xl: 3.3125rem;
   --text-display-xl--line-height: 1.1;
   --text-display-xl--letter-spacing: -0.02em;
-  --text-display-xl--font-weight: 500;
+  --text-display-xl--font-weight: 900;
 
   --text-display-lg: 2.5rem;
   --text-display-lg--line-height: 1.15;
   --text-display-lg--letter-spacing: -0.01em;
-  --text-display-lg--font-weight: 500;
+  --text-display-lg--font-weight: 700;
 
   --text-display-md: 2.0625rem;
   --text-display-md--line-height: 1.2;
-  --text-display-md--font-weight: 600;
+  --text-display-md--font-weight: 700;
 
   --text-display-sm: 1.625rem;
   --text-display-sm--line-height: 1.25;
@@ -240,7 +262,15 @@
   --ease-move: cubic-bezier(0.4, 0, 0.2, 1);
   /* --font-heading removed: headings use --font-display (Bricolage). */
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Overlay highlights for the always-navy rail. White-translucent in BOTH
+     themes because the rail itself never lightens — these replace raw bg-white,
+     which the lexicon rightly bans for theme-adaptive surfaces. */
+  --color-sidebar-hover: rgb(255 255 255 / 0.05);
+  --color-sidebar-active: rgb(255 255 255 / 0.09);
   --color-sidebar-border: var(--sidebar-border);
+  /* A hairline over the navy rail — the sidebar's own divider, always a faint
+     white regardless of theme (there is only the navy sidebar). */
+  --color-sidebar-divider: rgb(255 255 255 / 0.07);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
@@ -407,5 +437,441 @@
   50% {
     opacity: 1;
     r: calc(var(--node-r, 4) * 1.35);
+  }
+}
+
+/* Workspace mobile "More" sheet — backdrop fades, panel rises from the edge.
+   Transform + opacity only, so it composites cheaply on a phone. Under
+   reduced-motion both simply appear (see the guard below). */
+@keyframes tlEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tlSheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.tl-backdrop {
+  animation: tlEnter 180ms ease-out;
+}
+.tl-sheet {
+  animation: tlSheetUp 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-backdrop,
+  .tl-sheet {
+    animation: none;
+  }
+}
+
+/* Long-form policy body (the /legal pages). Styles plain semantic HTML on
+   tokens so each policy page carries only content, and anchor targets clear the
+   sticky legal tab bar. Replaces V1's `prose prose-slate`. */
+.legal-prose {
+  color: var(--body);
+  line-height: 1.7;
+  font-size: 0.9375rem;
+}
+.legal-prose h2 {
+  color: var(--foreground);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.legal-prose h3 {
+  color: var(--foreground);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  scroll-margin-top: 5rem;
+}
+.legal-prose h4 {
+  color: var(--foreground);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.legal-prose p {
+  margin-bottom: 1rem;
+}
+.legal-prose ul,
+.legal-prose ol {
+  margin: 0.75rem 0 1rem 1.25rem;
+}
+.legal-prose ul {
+  list-style: disc;
+}
+.legal-prose ol {
+  list-style: decimal;
+}
+.legal-prose li {
+  margin-bottom: 0.4rem;
+}
+.legal-prose a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.legal-prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+.legal-prose :first-child {
+  margin-top: 0;
+}
+
+/* ============================================================================
+   D67 — V1's motion vocabulary returns (29 Jul 2026).
+
+   Gregg's direction: the wow factor V1 had comes back. These are V1's own
+   animation tokens, keyframes, and the CSS-only scroll-entrance system its
+   components depend on (marquee, shine-border, shiny-text, pulsating-button,
+   AnimatedSection). Everything degrades under prefers-reduced-motion via the
+   global override below — the accessibility discipline is retained even
+   though the M1–M16 closure is lifted.
+   ============================================================================ */
+
+@theme inline {
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-shiny-text: shiny-text 8s infinite;
+  --animate-shine: shine var(--duration) infinite linear;
+  --animate-pulse: pulse var(--duration) ease-out infinite;
+  --animate-shimmer-slide: shimmer-slide var(--shimmer-duration, 2.5s) ease-in-out infinite;
+  --animate-gradient-x: gradient-x 4s ease infinite;
+  --animate-border-beam: border-beam var(--border-beam-duration, 12s) linear
+    var(--border-beam-delay, 0s) infinite;
+  /* The gliding catalogue gallery — three speeds; each column duplicates its
+     list, so translateY(-50%) loops back to its own start with no visible jump (V1's construction). */
+  --animate-glide-up: glide-up 38s linear infinite;
+  --animate-glide-up-mid: glide-up 28s linear infinite;
+  --animate-glide-up-fast: glide-up 22s linear infinite;
+
+  @keyframes shimmer-slide {
+    to {
+      transform: translateX(100%);
+    }
+  }
+  @keyframes gradient-x {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  @keyframes border-beam {
+    100% {
+      offset-distance: 100%;
+    }
+  }
+  @keyframes glide-up {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(-50%);
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+  @keyframes shine {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    to {
+      background-position: 0% 0%;
+    }
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    50% {
+      box-shadow: 0 0 0 8px var(--pulse-color);
+    }
+  }
+}
+
+/* ── Micro-animations (V1) ──────────────────────────────────────────────── */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+/* ── Delight animations (V1) ────────────────────────────────────────────── */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-cyan) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--brand-cyan) 0%, transparent);
+  }
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes ripple-out {
+  0% {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes draw-stroke {
+  from {
+    stroke-dashoffset: var(--stroke-length, 1200);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes attention-ping {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* ── Scroll-triggered entrances (CSS-only; AnimatedSection sets data-visible) */
+
+[data-animate] {
+  opacity: 0;
+  transition-property: opacity, transform, filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: var(--anim-duration, 0.5s);
+  transition-delay: var(--anim-delay, 0s);
+}
+[data-animate][data-visible='true'] {
+  opacity: 1;
+  transform: none !important;
+  filter: none !important;
+}
+[data-animate='fade-up'] {
+  transform: translateY(30px);
+}
+[data-animate='fade-down'] {
+  transform: translateY(-30px);
+}
+[data-animate='fade-left'] {
+  transform: translateX(-30px);
+}
+[data-animate='fade-right'] {
+  transform: translateX(30px);
+}
+[data-animate='scale'] {
+  transform: scale(0.95);
+}
+[data-animate='blur'] {
+  filter: blur(8px);
+}
+
+/* ── Animation utilities, motion-safe only ──────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.3s ease both;
+  }
+  .animate-scale-in {
+    animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+  .animate-bounce-in {
+    animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .animate-ripple-out {
+    animation: ripple-out 0.6s ease-out both;
+  }
+  .animate-attention-ping {
+    animation: attention-ping 2.4s ease-in-out infinite;
+  }
+  .animate-typing-dot {
+    animation: typing-dot 1.2s ease-in-out infinite;
+  }
+}
+
+/* ── WCAG 2.1 SC 2.3.3 — global reduced-motion override ─────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

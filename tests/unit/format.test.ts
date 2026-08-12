@@ -199,6 +199,14 @@ describe('formatDate', () => {
     expect(formatDate('2026-07-19T12:00:00Z')).toMatch(/^\d{1,2} July 2026$/)
   })
 
+  it('renders a date-ONLY string as that calendar date, not the day before', () => {
+    // '2027-03-31' parses as UTC midnight per the spec; unpinned, it rendered
+    // "30 March 2027" in Trinidad (UTC-4). The launch free-window date and the
+    // Pioneer backstop are both date-only strings, so this is user-visible.
+    expect(formatDate('2027-03-31')).toBe('31 March 2027')
+    expect(formatDate('2027-01-07')).toBe('7 January 2027')
+  })
+
   it('does not throw on invalid input', () => {
     expect(formatDate('not a date')).toBe('—')
   })

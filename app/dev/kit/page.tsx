@@ -895,7 +895,7 @@ export default function DevKitPage() {
         <PricingTierCards
           tiers={TIER_ORDER.map((id) => TIERS[id])}
           accountTrack="sole_trader"
-          billingPeriod="monthly"
+          periodMonths={1}
           pioneerActive
           context="public"
           onSelect={() => undefined}

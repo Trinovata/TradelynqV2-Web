@@ -46,6 +46,15 @@ type ErrorDetails = {
     requiredTier: string
   }
 
+  /**
+   * The feature is withheld during the launch pricing window (D62) — nothing
+   * the caller can buy or do unlocks it yet. Distinct from TIER_UPGRADE_REQUIRED,
+   * which offers a purchasable fix; the client renders "coming soon", not a CTA.
+   */
+  FEATURE_NOT_YET_AVAILABLE: {
+    feature: string
+  }
+
   /** Legal documents must be accepted before this action proceeds. */
   LEGAL_ACCEPTANCE_REQUIRED: {
     /** Document slugs still outstanding, e.g. ['terms-of-service', 'privacy-policy']. */
@@ -130,6 +139,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   UNAUTHENTICATED: 401,
   FORBIDDEN_ROLE: 403,
   TIER_UPGRADE_REQUIRED: 403,
+  FEATURE_NOT_YET_AVAILABLE: 403,
   LEGAL_ACCEPTANCE_REQUIRED: 403,
   KYC_REQUIRED: 403,
   INVALID_INPUT: 422,
@@ -156,6 +166,7 @@ const MESSAGE: Record<ApiErrorCode, string> = {
   UNAUTHENTICATED: 'Authentication required.',
   FORBIDDEN_ROLE: 'Your account role cannot access this resource.',
   TIER_UPGRADE_REQUIRED: 'This feature requires a higher subscription tier.',
+  FEATURE_NOT_YET_AVAILABLE: 'This feature is not available yet. It arrives after launch.',
   LEGAL_ACCEPTANCE_REQUIRED: 'Outstanding legal documents must be accepted first.',
   KYC_REQUIRED: 'Identity verification is required to continue.',
   INVALID_INPUT: 'The submitted data failed validation.',

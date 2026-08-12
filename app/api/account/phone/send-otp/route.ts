@@ -3,15 +3,25 @@
  *
  * Body: `{ phone_number: string }` → 200 `{ sent: true, expires_in: 600 }`
  *
- * Route order: auth → rate-limit → zod → work.
+ * Route order: auth → zod/validation → cooldown → rate-limit → send.
  *
- * This is a DELIBERATE, documented departure from the canon's
- * "rate-limit → auth" ordering. The `otp_send` budget is per-account (3/hour),
- * so the limiter is keyed on `userId` — which does not exist until auth has run.
- * Auth therefore has to precede it. That is the right trade for these routes:
- * there is no anonymous OTP path, so nothing needs limiting before a session
- * exists, and a per-account budget is what the pack specifies. `otp_send` is
- * fail-closed, so if the limit cannot be verified no message is sent.
+ * Two DELIBERATE, documented departures from the canon's
+ * "rate-limit → auth → zod → work" ordering:
+ *
+ * 1. Auth precedes the limiter. The `otp_send` budget is per-account (3/hour),
+ *    so the limiter is keyed on `userId` — which does not exist until auth has
+ *    run. There is no anonymous OTP path, so nothing needs limiting before a
+ *    session exists, and a per-account budget is what the pack specifies.
+ *
+ * 2. The scarce `otp_send` budget is consumed LAST, just before dispatch —
+ *    after zod validation, the dependency check, and the resend cooldown, all
+ *    of which can reject a request that never sends anything. Consuming it
+ *    up-front (the previous order) let a double-tap, an invalid number, or an
+ *    unconfigured dependency burn one of only three hourly sends without a
+ *    message ever going out, locking legitimate users out of phone
+ *    verification. The limiter still runs before every actual send, so the
+ *    3/hour abuse cap is fully enforced, and it stays fail-closed: if the limit
+ *    cannot be verified, no code is sent.
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -68,9 +78,6 @@ export async function handleSendOtp(
   const auth = await requireAuth(request)
   if (!auth.ok) return auth.response
 
-  const limit = await checkRateLimit('otp_send', identifierFrom(request, auth.userId))
-  if (!limit.ok) return limit.response
-
   let raw: unknown
   try {
     raw = await request.json()
@@ -102,8 +109,10 @@ export async function handleSendOtp(
     return unavailable()
   }
 
-  // Cooldown, under the hourly limiter. Stops a double-tap from burning one of
-  // only three hourly sends without telling the user why they are stuck.
+  // Cooldown runs BEFORE the scarce send limiter is consumed. A double-tap — or
+  // any request the cooldown short-circuits — must not burn one of only three
+  // hourly sends the cooldown exists to protect, and it tells the user why they
+  // are stuck instead of silently spending their budget.
   const existing = await store.read(auth.userId)
   if (existing && Date.now() - existing.issuedAt < OTP_RESEND_COOLDOWN_SECONDS * 1000) {
     const waitSeconds = Math.ceil(
@@ -115,6 +124,14 @@ export async function handleSendOtp(
       `A code was just sent. Wait ${waitSeconds} seconds before asking for another.`
     )
   }
+
+  // The scarce `otp_send` budget (3/hour, fail-closed) is consumed HERE — only
+  // once the request has cleared validation, the dependency check, and the
+  // cooldown, and is genuinely about to dispatch a message. Any earlier and a
+  // rejected request that never sent anything would still decrement the budget.
+  // Still fail-closed: if the limit cannot be verified, no code is sent.
+  const limit = await checkRateLimit('otp_send', identifierFrom(request, auth.userId))
+  if (!limit.ok) return limit.response
 
   const code = generateOtp()
 

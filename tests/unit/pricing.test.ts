@@ -13,12 +13,21 @@ import {
   PIONEER,
   REGISTRATION_FEE,
   CREDIT_BUNDLES,
+  BILLING_PERIODS,
   accountSurcharge,
   monthlyTotal,
+  periodPerMonth,
+  periodSavings,
+  periodTotal,
   tierHasFeature,
   lowestTierWith,
   creditUnitCost,
   isPriceFrom,
+  PRICING_MODE,
+  LAUNCH_PRICING,
+  launchMonthly,
+  launchFeatureAvailable,
+  isSubscriptionFree,
   type TierId,
 } from '@/lib/constants/pricing'
 
@@ -228,5 +237,81 @@ describe('credit bundles', () => {
       const current = creditUnitCost(CREDIT_BUNDLES[i]!)
       expect(current).toBeLessThan(previous)
     }
+  })
+})
+
+describe('billing period ladder (25 Jul 2026 directive)', () => {
+  it('12 months is exactly two months free, on clean TTD', () => {
+    // Total-first arithmetic: monthly × 10, no rounding drift.
+    expect(periodTotal('growth', 12)).toBe(TIERS.growth.monthly * 10)
+    expect(periodSavings('growth', 12)).toBe(TIERS.growth.monthly * 2)
+  })
+
+  it('the ladder is monotonic — a longer commitment is never a worse rate', () => {
+    for (const id of TIER_ORDER) {
+      const rates = BILLING_PERIODS.map((p) => periodPerMonth(id, p.months))
+      for (let i = 1; i < rates.length; i++) {
+        expect(rates[i]).toBeLessThanOrEqual(rates[i - 1]!)
+      }
+    }
+  })
+
+  it('monthly is the undiscounted base', () => {
+    for (const id of TIER_ORDER) {
+      expect(periodTotal(id, 1)).toBe(TIERS[id].monthly)
+      expect(periodSavings(id, 1)).toBe(0)
+    }
+  })
+
+  it('totals reconcile: per-month × months ≈ total within rounding', () => {
+    for (const id of TIER_ORDER) {
+      for (const p of BILLING_PERIODS) {
+        const diff = Math.abs(periodPerMonth(id, p.months) * p.months - periodTotal(id, p.months))
+        expect(diff).toBeLessThan(p.months)
+      }
+    }
+  })
+})
+
+// ── Launch mode (D62, 29 July 2026) ──────────────────────────────────────────
+
+describe('launch mode — flat baseline, free window, AI tools withheld', () => {
+  it('runs in launch mode', () => {
+    // The platform's active regime. Deliberate flip only — see D62.
+    expect(PRICING_MODE).toBe('launch')
+  })
+
+  it('pins the launch values: $200 baseline, $50 student, free until 31 Mar 2027', () => {
+    expect(LAUNCH_PRICING.baselineMonthly).toBe(200)
+    expect(LAUNCH_PRICING.studentMonthly).toBe(50)
+    expect(LAUNCH_PRICING.freeUntil).toBe('2027-03-31')
+  })
+
+  it('everyone but students pays the flat baseline — the crossover sleeps', () => {
+    expect(launchMonthly('sole_trader')).toBe(200)
+    expect(launchMonthly('registered')).toBe(200)
+  })
+
+  it('students pay the student rate, or nothing on scholarship', () => {
+    expect(launchMonthly('student')).toBe(50)
+    expect(launchMonthly('student', { scholarship: true })).toBe(0)
+    // Scholarship is a student concept only; other tracks ignore it.
+    expect(launchMonthly('registered', { scholarship: true })).toBe(200)
+  })
+
+  it('the free window includes its last day in Trinidad time and not the day after', () => {
+    // 31 Mar 2027 23:00 in Trinidad (UTC-4) = 1 Apr 03:00 UTC — still free.
+    expect(isSubscriptionFree(new Date('2027-04-01T03:00:00.000Z'))).toBe(true)
+    // 1 Apr 2027 00:00 in Trinidad = 04:00 UTC — billing has begun.
+    expect(isSubscriptionFree(new Date('2027-04-01T04:00:00.000Z'))).toBe(false)
+    // Launch day is comfortably inside the window.
+    expect(isSubscriptionFree(new Date('2026-09-07T12:00:00.000Z'))).toBe(true)
+  })
+
+  it('withholds exactly the AI meter and nothing else', () => {
+    expect(launchFeatureAvailable('tool_credits')).toBe(false)
+    expect(launchFeatureAvailable('crm')).toBe(true)
+    expect(launchFeatureAvailable('webhooks')).toBe(true)
+    expect(launchFeatureAvailable('n8n')).toBe(true)
   })
 })

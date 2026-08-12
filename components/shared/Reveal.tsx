@@ -49,7 +49,10 @@ export function Reveal({
     return () => observer.disconnect()
   }, [delay])
 
-  const Component = Tag as React.ElementType
+  // Typed as 'div' for JSX inference (React 19's ElementType collapses to
+  // never here); at runtime the tag is whichever of div/section/li was asked
+  // for — all plain block elements sharing the ref surface this effect uses.
+  const Component = Tag as 'div'
   return (
     <Component ref={ref} className={className}>
       {children}

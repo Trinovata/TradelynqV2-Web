@@ -9,25 +9,13 @@ import Link from 'next/link'
 const COLUMNS = [
   {
     heading: 'Marketplace',
-    links: [
-      { href: '/search', label: 'Browse professionals' },
-      { href: '/catalogue', label: 'Catalogue' },
-      { href: '/categories', label: 'Categories' },
-    ],
+    links: [{ href: '/search', label: 'Browse professionals' }],
   },
   {
     heading: 'Professionals',
     links: [
       { href: '/for-professionals', label: 'For professionals' },
       { href: '/pricing', label: 'Pricing' },
-      { href: '/trust', label: 'Trust & safety' },
-    ],
-  },
-  {
-    heading: 'Support',
-    links: [
-      { href: '/faq', label: 'FAQ' },
-      { href: '/support', label: 'Support' },
     ],
   },
   {
@@ -44,7 +32,7 @@ const COLUMNS = [
 export function Footer() {
   return (
     <footer className="border-border bg-card-subtle mt-auto border-t">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-4">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
         {COLUMNS.map((column) => (
           <div key={column.heading} className="flex flex-col gap-3">
             <h2 className="text-muted text-xs font-medium tracking-wide uppercase">

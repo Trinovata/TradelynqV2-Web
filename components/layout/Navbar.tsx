@@ -17,10 +17,20 @@ import { Sheet } from '@/components/ui/Sheet'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { NavSearch } from '@/components/layout/NavSearch'
 
-const MENU_LINKS = [
-  { href: '/search', label: 'Browse professionals' },
-  { href: '/for-professionals', label: 'For professionals' },
-  { href: '/pricing', label: 'Pricing' },
+/**
+ * Question-led menu (Gregg directive 25 Jul 2026): the drawer is a set of the
+ * questions a visitor actually arrives with, each answered by its dedicated
+ * page — navigation as answers, not a sitemap.
+ */
+const MENU_QUESTIONS = [
+  { href: '/search', question: 'I need something done', page: 'Find a professional' },
+  { href: '/customer-guide', question: 'How does hiring here work?', page: 'Customer guide' },
+  { href: '/for-professionals', question: 'How do I grow my business?', page: 'For professionals' },
+  { href: '/pricing', question: 'What does it cost?', page: 'Pricing' },
+  { href: '/trust', question: 'Can I trust who I find?', page: 'Trust & safety' },
+  { href: '/why-tradelynq', question: 'Why does TradeLynq exist?', page: 'The deeper dive' },
+  { href: '/about', question: 'Who is behind this?', page: 'About us' },
+  { href: '/faq', question: 'Something else?', page: 'Help centre & FAQ' },
 ] as const
 
 export function Navbar() {
@@ -96,14 +106,15 @@ export function Navbar() {
 
       <Sheet open={menuOpen} onOpenChange={setMenuOpen} title="Menu" hideTitle>
         <div className="flex flex-col gap-1 pb-4">
-          {MENU_LINKS.map((link) => (
+          {MENU_QUESTIONS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="text-foreground hover:bg-card-subtle rounded-[--radius-control] px-3 py-3 text-base transition-[background-color] duration-150"
+              className="hover:bg-card-subtle flex flex-col rounded-[--radius-control] px-3 py-2.5 transition-[background-color] duration-150"
             >
-              {link.label}
+              <span className="text-foreground text-base">{link.question}</span>
+              <span className="text-muted text-xs">{link.page}</span>
             </Link>
           ))}
           <div className="border-border mt-2 flex flex-col gap-2 border-t pt-4">

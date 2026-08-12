@@ -42,10 +42,17 @@ DELETE FROM auth.users WHERE id::text LIKE '5eed%';
 --
 -- All seed accounts share the password `devpassword123` — local-only, and the
 -- runner cannot reach a hosted database.
+-- The token columns are set to '' (empty string), NOT left NULL. GoTrue's Go
+-- code scans them as non-nullable strings, so a NULL here makes EVERY login
+-- 500 with "converting NULL to string is unsupported" — a real signup through
+-- GoTrue fills them, but a direct INSERT like this must too. (Caught 26 Jul
+-- 2026: seeded logins all failed until these were set.)
 INSERT INTO auth.users (
   id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-  created_at, updated_at
+  created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
+  email_change_token_current, phone_change, phone_change_token, reauthentication_token
 )
 SELECT
   seed.id,
@@ -58,7 +65,8 @@ SELECT
   '{"provider":"email","providers":["email"]}'::jsonb,
   jsonb_build_object('full_name', seed.full_name),
   NOW() - (seed.age_days || ' days')::interval,
-  NOW()
+  NOW(),
+  '', '', '', '', '', '', '', ''
 FROM (VALUES
   ('5eed0000-0000-4000-8000-000000000001'::uuid, 'anisa.mohammed@example.com',   'Anisa Mohammed',    210),
   ('5eed0000-0000-4000-8000-000000000002'::uuid, 'darren.baptiste@example.com',  'Darren Baptiste',   195),

@@ -55,6 +55,7 @@ import {
   type RoleContext,
   type ProfessionalContext,
 } from '@/lib/access/api'
+import { PRICING_MODE } from '@/lib/constants/pricing'
 
 // ── A Supabase test double ───────────────────────────────────────────────────
 
@@ -565,12 +566,14 @@ describe('ensureLegalAcceptances — the version check', () => {
   })
 
   it('accepts the in-force version', async () => {
+    // Reads the constant, not a literal — a version bump (e.g. terms 2.0→2.1,
+    // 25 Jul 2026) must re-prompt users, never quietly break this test.
     const result = await ensureLegalAcceptances(
       context({
         legal_acceptances: {
           data: [
-            { document_type: 'terms', document_version: '2.0' },
-            { document_type: 'privacy', document_version: '2.0' },
+            { document_type: 'terms', document_version: CURRENT_LEGAL_VERSIONS.terms },
+            { document_type: 'privacy', document_version: CURRENT_LEGAL_VERSIONS.privacy },
           ],
         },
       }),
@@ -810,17 +813,22 @@ describe('requireTierFeature', () => {
     tier,
   })
 
+  // The tiers-mode branch stays fully tested even while the platform runs in
+  // launch mode — D62 shelves the engine, it does not delete it, and these
+  // tests are the proof it still works when the flag flips back.
   it('answers PAYMENT_REQUIRED, not TIER_UPGRADE_REQUIRED, when there is no subscription', async () => {
     // The distinction matters: one is fixed by paying, the other by upgrading.
     // A cancelled or past_due subscription arrives here as a null tier.
-    const { status, body } = await refusal(requireTierFeature(professional(null), 'crm'))
+    const { status, body } = await refusal(requireTierFeature(professional(null), 'crm', 'tiers'))
     expect(status).toBe(402)
     expect(body.code).toBe('PAYMENT_REQUIRED')
     expect((body.details as { reason: string }).reason).toBe('subscription_inactive')
   })
 
   it('refuses a feature the tier does not include, naming the CHEAPEST sufficient tier', async () => {
-    const { status, body } = await refusal(requireTierFeature(professional('presence'), 'crm'))
+    const { status, body } = await refusal(
+      requireTierFeature(professional('presence'), 'crm', 'tiers')
+    )
     expect(status).toBe(403)
     expect(body.code).toBe('TIER_UPGRADE_REQUIRED')
     // Studio, not Enterprise — the prompt must offer the smallest step.
@@ -833,20 +841,52 @@ describe('requireTierFeature', () => {
 
   it('gates webhooks to Enterprise and admits Enterprise', async () => {
     for (const tier of ['presence', 'growth', 'studio', 'pro'] as const) {
-      expect(requireTierFeature(professional(tier), 'webhooks').ok, tier).toBe(false)
+      expect(requireTierFeature(professional(tier), 'webhooks', 'tiers').ok, tier).toBe(false)
     }
-    expect(requireTierFeature(professional('enterprise'), 'webhooks').ok).toBe(true)
+    expect(requireTierFeature(professional('enterprise'), 'webhooks', 'tiers').ok).toBe(true)
   })
 
   it('treats a zero credit allowance as NOT having the feature', async () => {
     // Presence has tool_credits: 0. A truthiness check on the number would have
     // let it through as "defined", so this asserts the >0 rule explicitly.
-    expect(requireTierFeature(professional('presence'), 'tool_credits').ok).toBe(false)
-    expect(requireTierFeature(professional('growth'), 'tool_credits').ok).toBe(true)
+    expect(requireTierFeature(professional('presence'), 'tool_credits', 'tiers').ok).toBe(false)
+    expect(requireTierFeature(professional('growth'), 'tool_credits', 'tiers').ok).toBe(true)
   })
 
   it('returns the context unchanged when the tier qualifies', async () => {
     const context = professional('studio')
+    expect(requireTierFeature(context, 'crm', 'tiers')).toBe(context)
+  })
+
+  // ── Launch mode (D62) — the regime the platform actually runs today ─────────
+
+  it('runs in launch mode by default', () => {
+    // A canary, not a tautology: routes call requireTierFeature with no mode
+    // argument, so this constant IS the platform's behaviour. When the tiers
+    // regime returns, this test is the one that asks for a deliberate flip.
+    expect(PRICING_MODE).toBe('launch')
+  })
+
+  it('launch mode admits every feature except the AI meter, on any tier', () => {
+    for (const feature of ['crm', 'webhooks', 'n8n'] as const) {
+      for (const tier of ['presence', 'growth', 'studio', 'pro', 'enterprise'] as const) {
+        const context = professional(tier)
+        expect(requireTierFeature(context, feature), `${feature}/${tier}`).toBe(context)
+      }
+    }
+  })
+
+  it('launch mode does not demand a subscription — free window, nothing to pay', () => {
+    const context = professional(null)
     expect(requireTierFeature(context, 'crm')).toBe(context)
+  })
+
+  it('launch mode withholds the AI business tools from EVERYONE, Enterprise included', async () => {
+    const { status, body } = await refusal(
+      requireTierFeature(professional('enterprise'), 'tool_credits')
+    )
+    expect(status).toBe(403)
+    expect(body.code).toBe('FEATURE_NOT_YET_AVAILABLE')
+    expect(body.details).toEqual({ feature: 'tool_credits' })
   })
 })

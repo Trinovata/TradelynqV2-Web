@@ -220,3 +220,114 @@ export function lowestTierWith(feature: FeatureKey): TierId {
   // the return type total rather than optional.
   return found ?? 'enterprise'
 }
+
+// ── Billing periods (Gregg directive, 25 Jul 2026 — D-entry pending) ─────────
+
+/**
+ * Commit-length pricing: the longer the package, the cheaper the month. The
+ * ladder replaces the earlier monthly/annual toggle (deck §9.2's "2 months
+ * free on annual" flag is now resolved BY this model — 12 months IS 2 months
+ * free, exactly).
+ *
+ * Totals are computed total-first so the arithmetic lands on clean TTD:
+ * 12 months = monthly × 10 (two months free), 6 months = ×0.90, 3 = ×0.95.
+ * The per-month figure shown on a card is the derived total ÷ months — the
+ * struck monthly price beside it is the anchor that makes the saving legible.
+ */
+export type BillingPeriodMonths = 1 | 3 | 6 | 12
+
+export const BILLING_PERIODS: ReadonlyArray<{
+  months: BillingPeriodMonths
+  label: string
+  multiplier: number
+  /** The chip on the toggle. Null for the base period — no fake zero-savings. */
+  savingsLabel: string | null
+}> = [
+  { months: 1, label: 'Monthly', multiplier: 1, savingsLabel: null },
+  { months: 3, label: '3 months', multiplier: 0.95, savingsLabel: 'Save 5%' },
+  { months: 6, label: '6 months', multiplier: 0.9, savingsLabel: 'Save 10%' },
+  { months: 12, label: '12 months', multiplier: 10 / 12, savingsLabel: '2 months free' },
+]
+
+/** The package total for a tier over a period, in whole TTD. */
+export function periodTotal(tier: TierId, months: BillingPeriodMonths): number {
+  const period = BILLING_PERIODS.find((p) => p.months === months)
+  return Math.round(TIERS[tier].monthly * months * (period?.multiplier ?? 1))
+}
+
+/** The effective per-month rate for the period — the number the card leads with. */
+export function periodPerMonth(tier: TierId, months: BillingPeriodMonths): number {
+  return Math.round(periodTotal(tier, months) / months)
+}
+
+/** What the package saves against paying monthly, in whole TTD (0 for monthly). */
+export function periodSavings(tier: TierId, months: BillingPeriodMonths): number {
+  return TIERS[tier].monthly * months - periodTotal(tier, months)
+}
+
+// ── Launch mode (D62, 29 July 2026) ──────────────────────────────────────────
+
+/**
+ * Which pricing regime the platform runs.
+ *
+ * `launch` — tiers are NOT enforced. The platform is subscription-free through
+ * the beta and Pioneer windows; after that every professional pays the flat
+ * baseline, students pay the student rate (or nothing, on scholarship). Every
+ * tier feature is open to everyone EXCEPT the AI business tools, which are
+ * withheld until they return as paid features. Credits UI is hidden; the
+ * engine stays dormant.
+ *
+ * `tiers` — the five-tier + crossover model above, in full.
+ *
+ * Everything tier-shaped in this file stays intact behind this flag (D62:
+ * shelve, not delete). Flipping the flag back is the entire migration.
+ */
+export type PricingMode = 'launch' | 'tiers'
+
+export const PRICING_MODE: PricingMode = 'launch'
+
+export const LAUNCH_PRICING = {
+  /** Flat monthly rate for every professional once billing starts. */
+  baselineMonthly: 200,
+  /** Student rate — waivable to zero at the platform's discretion (scholarship). */
+  studentMonthly: 50,
+  /**
+   * Last day (inclusive, Trinidad time) of the subscription-free window:
+   * beta (Q4 2026) plus the Pioneer window. Billing begins the next day.
+   */
+  freeUntil: '2027-03-31',
+} as const
+
+/**
+ * Is the platform inside the launch free window at `now`?
+ *
+ * Trinidad & Tobago is UTC-4 with no daylight saving, so the window closes at
+ * the end of `freeUntil` in fixed -04:00 — no timezone-database dependency.
+ */
+export function isSubscriptionFree(now: Date): boolean {
+  return now.getTime() <= new Date(`${LAUNCH_PRICING.freeUntil}T23:59:59.999-04:00`).getTime()
+}
+
+/**
+ * The monthly subscription under launch pricing, once billing starts.
+ *
+ * Track collapses to two rates: students pay the student rate (zero on
+ * scholarship), everyone else pays the baseline. The registered/unregistered
+ * distinction carries no price difference in launch mode — the crossover
+ * model sleeps until the tiers flag flips.
+ */
+export function launchMonthly(track: AccountTrack, opts?: { scholarship?: boolean }): number {
+  if (track === 'student') return opts?.scholarship ? 0 : LAUNCH_PRICING.studentMonthly
+  return LAUNCH_PRICING.baselineMonthly
+}
+
+/**
+ * Is a tier feature open during launch mode?
+ *
+ * Everything is open except `tool_credits` — the meter behind the AI business
+ * tools (reply drafts, assistant), which D62 withholds at launch. Blocking the
+ * meter blocks the tools and keeps the credits system dormant in one move.
+ */
+export function launchFeatureAvailable(feature: FeatureKey): boolean {
+  return feature !== 'tool_credits'
+}

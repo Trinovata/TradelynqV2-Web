@@ -104,8 +104,9 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(function Av
       </AvatarPrimitive.Root>
 
       {/* Present whether or not the image loads — Radix swaps Image for
-          Fallback, and the name must survive that swap. */}
-      {!src && <span className="sr-only">{alt}</span>}
+          Fallback on load failure, and the accessible name must survive that
+          swap, so it is rendered unconditionally rather than only when `!src`. */}
+      <span className="sr-only">{alt}</span>
 
       {showVerified && (
         <span

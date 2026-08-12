@@ -11,6 +11,7 @@ const SPEC: Record<ApiErrorCode, number> = {
   UNAUTHENTICATED: 401,
   FORBIDDEN_ROLE: 403,
   TIER_UPGRADE_REQUIRED: 403,
+  FEATURE_NOT_YET_AVAILABLE: 403, // D62 — withheld at launch, no purchasable fix
   LEGAL_ACCEPTANCE_REQUIRED: 403,
   KYC_REQUIRED: 403,
   INVALID_INPUT: 422,

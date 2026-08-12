@@ -53,3 +53,7 @@ next-env.d.ts
 
 # sentry
 .sentryclirc
+
+# Local tooling artifacts (do not commit)
+.gstack/
+.mcp.json

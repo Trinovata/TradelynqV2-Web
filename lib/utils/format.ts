@@ -59,9 +59,20 @@ export function formatFromPrice(amount: number | null | undefined): string {
 
 // ── Dates ────────────────────────────────────────────────────────────────────
 
+/**
+ * A date-ONLY string (`2027-03-31`) parses as UTC midnight per the ECMAScript
+ * spec, so it renders one day early everywhere west of Greenwich — Trinidad
+ * included ("30 March 2027"). Pinning local midnight keeps a calendar date a
+ * calendar date. Strings that carry a time keep their spec behaviour.
+ */
+function parseDateInput(input: Date | string): Date {
+  if (typeof input !== 'string') return input
+  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(input) ? `${input}T00:00:00` : input)
+}
+
 /** `19 July 2026` — day first, per Commonwealth convention. */
 export function formatDate(input: Date | string): string {
-  const date = typeof input === 'string' ? new Date(input) : input
+  const date = parseDateInput(input)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat(LOCALE, {
     day: 'numeric',
@@ -72,7 +83,7 @@ export function formatDate(input: Date | string): string {
 
 /** `19 Jul 2026` — for tables and cards where width is scarce. */
 export function formatDateShort(input: Date | string): string {
-  const date = typeof input === 'string' ? new Date(input) : input
+  const date = parseDateInput(input)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat(LOCALE, {
     day: 'numeric',
@@ -227,4 +238,15 @@ export function truncate(text: string, maxLength: number): string {
 /** `1,234` — counts and quantities, grouped. */
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat(LOCALE).format(value)
+}
+
+/**
+ * RP2 response-time chip: median minutes → "45 min" / "2h" / "3d".
+ * Coarse on purpose — the chip says "usually responds in ~2h", and false
+ * precision ("127 minutes") reads as fabricated confidence.
+ */
+export function formatResponseTime(medianMinutes: number): string {
+  if (medianMinutes < 60) return `${Math.max(1, Math.round(medianMinutes))} min`
+  if (medianMinutes < 48 * 60) return `${Math.round(medianMinutes / 60)}h`
+  return `${Math.round(medianMinutes / (24 * 60))}d`
 }

@@ -69,6 +69,20 @@ export const serverEnv = {
       'Shared secret authenticating scheduled job invocations'
     )
   },
+  /**
+   * The master key that encrypts webhook signing secrets at rest (AES-256-GCM),
+   * as 64 hex characters (32 bytes). Deliberately NOT in PRODUCTION_REQUIRED: the
+   * platform boots fine without it and only Enterprise outbound webhooks need it,
+   * so it fails loud at first dispatch rather than blocking every deploy. Add it
+   * to PRODUCTION_REQUIRED once an Enterprise customer is live.
+   */
+  get webhookSecretKey(): string {
+    return required(
+      process.env.WEBHOOK_SECRET_KEY,
+      'WEBHOOK_SECRET_KEY',
+      'Master key (64 hex chars) encrypting webhook signing secrets at rest — generate with `openssl rand -hex 32`'
+    )
+  },
 } as const
 
 // ── Runtime facts ────────────────────────────────────────────────────────────

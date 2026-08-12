@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils/cn'
  *
  * Flat by default — border only, no shadow. Elevation has exactly three levels
  * and a resting card is the lowest; shadows on everything make nothing look
- * raised.
+ * raised. The raised levels use the bespoke navy-tinted elevation scale
+ * (`--shadow-e1/e2/e3`), not Tailwind's neutral-grey defaults — a warm shadow
+ * that belongs to the "Ink & Paper" palette reads as premium where a flat grey
+ * one reads as generic.
  *
  * An interactive card gets the whole surface as one link target rather than a
  * "View" button in the corner. A 300px card with a 60px click target is a card
@@ -20,8 +23,8 @@ const cardVariants = cva('rounded-[--radius-card] bg-card text-body', {
   variants: {
     elevation: {
       flat: 'border border-border',
-      raised: 'border border-border shadow-sm',
-      overlay: 'border border-border shadow-lg',
+      raised: 'border border-border shadow-e1',
+      overlay: 'border border-border shadow-e3',
     },
     padding: {
       none: '',
@@ -34,7 +37,7 @@ const cardVariants = cva('rounded-[--radius-card] bg-card text-body', {
         'relative isolate',
         // M2: hover raise. transform and shadow only.
         'transition-[transform,box-shadow] duration-150 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-sm',
+        'hover:-translate-y-0.5 hover:shadow-e2',
         // M1: press.
         'active:translate-y-0 active:scale-[0.995]',
         'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring',
