@@ -125,6 +125,11 @@ if (isPreviewDeployment) scriptSrc.push('https://vercel.live')
 
 const connectSrc = [
   "'self'",
+  // blob: because three's GLTFLoader fetch()es its own object URLs when
+  // unpacking textures embedded in the hero GLB — same-document data, not a
+  // network origin. Without it every hero texture is CSP-blocked (img-src
+  // alone does not cover fetch()).
+  'blob:',
   'https://*.supabase.co',
   'wss://*.supabase.co',
   'https://*.posthog.com',
