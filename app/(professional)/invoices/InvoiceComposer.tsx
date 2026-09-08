@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Banner } from '@/components/ui/Banner'
 import { formatTTD } from '@/lib/utils/format'
 import { computeQuoteTotals } from '@/lib/quotes'
+import { whatsappDigits } from '@/lib/whatsapp'
 
 type Line = { description: string; quantity: string; unitPrice: string }
 const emptyLine = (): Line => ({ description: '', quantity: '1', unitPrice: '' })
@@ -120,8 +121,14 @@ function InvoiceComposer({
   }
 
   if (sent) {
-    const waHref = customerPhone.trim()
-      ? `https://wa.me/${customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+    // `whatsappDigits` rather than a local digit strip. A T&T number typed the
+    // common local way (868 …) carries no country code, so the old local strip
+    // produced `wa.me/8683552214`, which WhatsApp rejects — on the primary
+    // delivery path for the document. The helper returns null for anything it
+    // cannot parse, so an unusable number now renders no button, not a dead link.
+    const waDigits = whatsappDigits(customerPhone)
+    const waHref = waDigits
+      ? `https://wa.me/${waDigits}?text=${encodeURIComponent(
           `Hi ${customerName}, here's your invoice ${sent.number}: ${sent.link}`
         )}`
       : undefined
