@@ -16,7 +16,7 @@
 import * as React from 'react'
 import { FileCheck2, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { uploadProfessionalImage, ACCEPTED_IMAGE_TYPES } from './upload'
+import { uploadCredentialDocument, ACCEPTED_DOCUMENT_TYPES } from './upload'
 import { useOnboarding } from './context'
 
 export function CredentialUpload({
@@ -30,7 +30,7 @@ export function CredentialUpload({
   hint: string
   note?: string
   value: string | null
-  onChange: (url: string | null) => void
+  onChange: (path: string | null) => void
 }) {
   const { userId } = useOnboarding()
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -41,9 +41,9 @@ export function CredentialUpload({
     if (!file) return
     setBusy(true)
     setError(null)
-    const result = await uploadProfessionalImage(file, userId, 'credentials')
+    const result = await uploadCredentialDocument(file, userId)
     setBusy(false)
-    if (result.ok) onChange(result.url)
+    if (result.ok) onChange(result.path)
     else setError(result.message)
   }
 
@@ -55,7 +55,7 @@ export function CredentialUpload({
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        accept={ACCEPTED_DOCUMENT_TYPES.join(',')}
         className="sr-only"
         onChange={(event) => {
           void handleFile(event.target.files?.[0])

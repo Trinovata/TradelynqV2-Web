@@ -96,8 +96,8 @@ export async function PUT(request: Request) {
     ...(existing?.certifications && typeof existing.certifications === 'object'
       ? (existing.certifications as Record<string, unknown>)
       : {}),
-    registration_doc_url:
-      body.subtypeDocUrl !== undefined ? body.subtypeDocUrl : credentials.registration_doc_url,
+    registration_doc_path:
+      body.subtypeDocPath !== undefined ? body.subtypeDocPath : credentials.registration_doc_path,
     bir_number: body.birNumber !== undefined ? body.birNumber : credentials.bir_number,
   }
 
@@ -118,7 +118,7 @@ export async function PUT(request: Request) {
   }
   if (body.portfolioUrls !== undefined) fields.portfolio_urls = body.portfolioUrls
   if (body.contactWhatsapp !== undefined) fields.contact_whatsapp = body.contactWhatsapp || null
-  if (body.subtypeDocUrl !== undefined || body.birNumber !== undefined) {
+  if (body.subtypeDocPath !== undefined || body.birNumber !== undefined) {
     fields.certifications = nextCredentials
   }
   // The furthest step reached, never a step backwards — going back to fix

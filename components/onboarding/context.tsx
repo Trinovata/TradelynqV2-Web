@@ -186,7 +186,7 @@ export function OnboardingProvider({
           categoryId: next.categoryId,
           serviceAreas: next.serviceAreas,
           yearsExperience: next.yearsExperience,
-          subtypeDocUrl: next.subtypeDocUrl,
+          subtypeDocPath: next.subtypeDocPath,
           birNumber: next.birNumber,
           profilePhotoUrl: next.profilePhotoUrl,
           bio: next.bio,

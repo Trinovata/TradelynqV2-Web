@@ -104,8 +104,8 @@ export function StepBasics() {
           label="Student ID or proof of enrolment"
           hint="We verify students by hand before your page goes live. This keeps the student rate honest."
           note="Under 18? We’ll also need a parent or guardian to confirm consent before approval."
-          value={draft.subtypeDocUrl}
-          onChange={(subtypeDocUrl) => update({ subtypeDocUrl })}
+          value={draft.subtypeDocPath}
+          onChange={(subtypeDocPath) => update({ subtypeDocPath })}
         />
       )}
 
@@ -114,8 +114,8 @@ export function StepBasics() {
           <CredentialUpload
             label="Certificate of Incorporation (or your BIR number)"
             hint="We check this against the Companies Registry before granting your Registered badge."
-            value={draft.subtypeDocUrl}
-            onChange={(subtypeDocUrl) => update({ subtypeDocUrl })}
+            value={draft.subtypeDocPath}
+            onChange={(subtypeDocPath) => update({ subtypeDocPath })}
           />
           <Input
             label="BIR number"

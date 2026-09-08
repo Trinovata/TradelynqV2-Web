@@ -132,6 +132,51 @@ describe('draftSchema (the autosave body)', () => {
   })
 })
 
+describe('subtypeDocPath (credentials must stay in the private bucket)', () => {
+  const UUID_A = '3f2504e0-4f89-11d3-9a0c-0305e82c3301'
+  const UUID_B = '7c9e6679-7425-40de-944b-e07fc1f90ae7'
+
+  it('accepts a storage path in the uploader’s own folder', () => {
+    const path = `${UUID_A}/credentials/${UUID_B}.pdf`
+    expect(draftSchema.safeParse({ subtypeDocPath: path }).success).toBe(true)
+  })
+
+  it('accepts the image forms a phone produces', () => {
+    for (const ext of ['jpg', 'png', 'webp']) {
+      const path = `${UUID_A}/credentials/${UUID_B}.${ext}`
+      expect(draftSchema.safeParse({ subtypeDocPath: path }).success).toBe(true)
+    }
+  })
+
+  // The bug this replaced: credentials went to the PUBLIC bucket and the draft
+  // stored getPublicUrl(). A Certificate of Incorporation was world-readable by
+  // URL. Storing a public URL here must now be impossible.
+  it('rejects a public URL', () => {
+    const url = 'https://example.supabase.co/storage/v1/object/public/professional-assets/a.jpg'
+    expect(draftSchema.safeParse({ subtypeDocPath: url }).success).toBe(false)
+  })
+
+  it('rejects traversal out of the credentials folder', () => {
+    for (const bad of [
+      `../${UUID_A}/credentials/${UUID_B}.pdf`,
+      `/${UUID_A}/credentials/${UUID_B}.pdf`,
+      `${UUID_A}/portfolio/${UUID_B}.pdf`,
+      `${UUID_A}/credentials/../../${UUID_B}.pdf`,
+    ]) {
+      expect(draftSchema.safeParse({ subtypeDocPath: bad }).success).toBe(false)
+    }
+  })
+
+  it('rejects an executable masquerading as a document', () => {
+    const path = `${UUID_A}/credentials/${UUID_B}.exe`
+    expect(draftSchema.safeParse({ subtypeDocPath: path }).success).toBe(false)
+  })
+
+  it('still accepts null — the document is optional until publish', () => {
+    expect(draftSchema.safeParse({ subtypeDocPath: null }).success).toBe(true)
+  })
+})
+
 describe('publishSchema', () => {
   it('demands an explicit confirmation', () => {
     expect(publishSchema.safeParse({}).success).toBe(false)

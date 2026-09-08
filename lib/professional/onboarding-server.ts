@@ -59,18 +59,18 @@ function parseServices(value: unknown): OnboardingService[] {
  * Incorporation is, precisely, a certification.
  */
 export type SubtypeCredentials = {
-  registration_doc_url: string | null
+  registration_doc_path: string | null
   bir_number: string
 }
 
 export function parseCredentials(value: unknown): SubtypeCredentials {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return { registration_doc_url: null, bir_number: '' }
+    return { registration_doc_path: null, bir_number: '' }
   }
   const row = value as Record<string, unknown>
   return {
-    registration_doc_url:
-      typeof row.registration_doc_url === 'string' ? row.registration_doc_url : null,
+    registration_doc_path:
+      typeof row.registration_doc_path === 'string' ? row.registration_doc_path : null,
     bir_number: typeof row.bir_number === 'string' ? row.bir_number : '',
   }
 }
@@ -186,7 +186,7 @@ export async function getOnboardingContext(
       categoryId: row.category_id,
       serviceAreas: row.service_areas ?? [],
       yearsExperience,
-      subtypeDocUrl: credentials.registration_doc_url,
+      subtypeDocPath: credentials.registration_doc_path,
       birNumber: credentials.bir_number,
       profilePhotoUrl: row.profile_photo_url,
       bio: row.bio ?? '',

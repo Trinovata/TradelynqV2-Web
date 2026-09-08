@@ -44,7 +44,7 @@ export type OnboardingDraft = {
   serviceAreas: string[]
   yearsExperience: number | null
   /** Student track: proof of enrolment. Registered track: incorporation doc. */
-  subtypeDocUrl: string | null
+  subtypeDocPath: string | null
   birNumber: string
   // Step 2 — about
   profilePhotoUrl: string | null
@@ -62,7 +62,7 @@ export const ONBOARDING_STEPS = ['Basics', 'About', 'Services', 'Proof', 'Publis
 export const ONBOARDING_STEP_COUNT = ONBOARDING_STEPS.length
 
 /** localStorage key. Versioned, so a shape change cannot resurrect a stale draft. */
-export const ONBOARDING_STORAGE_KEY = 'tradelynq_onboarding_v2'
+export const ONBOARDING_STORAGE_KEY = 'tradelynq_onboarding_v3'
 
 export function emptyDraft(): OnboardingDraft {
   return {
@@ -71,7 +71,7 @@ export function emptyDraft(): OnboardingDraft {
     categoryId: null,
     serviceAreas: [],
     yearsExperience: null,
-    subtypeDocUrl: null,
+    subtypeDocPath: null,
     birNumber: '',
     profilePhotoUrl: null,
     bio: '',
@@ -176,6 +176,15 @@ export type OnboardingStep = keyof typeof stepSchemas | 5
  * whatever exists so far. Validation of *completeness* belongs to publish; this
  * schema only guarantees each present field is well-formed enough to store.
  */
+/**
+ * A credential lives in the private `kyc-documents` bucket, so what is stored
+ * is a storage path, never a URL. Pinning the shape here does double duty: it
+ * rejects a stray public URL (the bug this replaced), and it forbids the `..`
+ * and leading-slash forms that would try to address another user's folder.
+ */
+const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const CREDENTIAL_PATH = new RegExp(`^${UUID}/credentials/${UUID}[.](pdf|jpg|png|webp)$`, 'i')
+
 export const draftSchema = z.object({
   step: z.number().int().min(1).max(5).optional(),
   businessName: z.string().trim().max(80).optional(),
@@ -183,7 +192,12 @@ export const draftSchema = z.object({
   categoryId: z.string().uuid().nullable().optional(),
   serviceAreas: z.array(z.string().trim().min(1).max(60)).max(30).optional(),
   yearsExperience: z.number().int().min(0).max(70).nullable().optional(),
-  subtypeDocUrl: z.string().url().max(600).nullable().optional(),
+  subtypeDocPath: z
+    .string()
+    .max(600)
+    .regex(CREDENTIAL_PATH, "Not a credential storage path.")
+    .nullable()
+    .optional(),
   birNumber: z.string().trim().max(40).optional(),
   profilePhotoUrl: z.string().url().max(600).nullable().optional(),
   bio: z.string().trim().max(BIO_MAX).optional(),
