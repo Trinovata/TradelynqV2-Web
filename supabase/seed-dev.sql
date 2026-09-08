@@ -80,6 +80,11 @@ FROM (VALUES
   ('5eed0000-0000-4000-8000-00000000000a'::uuid, 'kevon.samuel@example.com',     'Kevon Samuel',       80),
   ('5eed0000-0000-4000-8000-00000000000b'::uuid, 'tricia.lewis@example.com',     'Tricia Lewis',       65),
   ('5eed0000-0000-4000-8000-00000000000c'::uuid, 'aaron.gopaul@example.com',     'Aaron Gopaul',       40),
+  -- Two professionals with NO storefront row at all: the state a real signup is
+  -- in the moment they pick "Professional" at /auth/select-role. Onboarding
+  -- (S107) is the only surface that can serve them, so it needs a fixture.
+  ('5eed0000-0000-4000-8000-00000000000d'::uuid, 'new.professional@example.com', 'Kyle Sookdeo',        0),
+  ('5eed0000-0000-4000-8000-00000000000e'::uuid, 'new.student@example.com',      'Alisha Boodoo',       0),
   ('5eed0000-0000-4000-8000-000000000101'::uuid, 'simone.job@example.com',       'Simone Job',        120),
   ('5eed0000-0000-4000-8000-000000000102'::uuid, 'andre.williams@example.com',   'Andre Williams',     90),
   ('5eed0000-0000-4000-8000-000000000103'::uuid, 'lisa.rampersad@example.com',   'Lisa Rampersad',     30)
@@ -105,7 +110,11 @@ FROM (VALUES
   ('5eed0000-0000-4000-8000-000000000009'::uuid, 'sole_trader'),
   ('5eed0000-0000-4000-8000-00000000000a'::uuid, 'student_entrepreneur'),
   ('5eed0000-0000-4000-8000-00000000000b'::uuid, 'sole_trader'),
-  ('5eed0000-0000-4000-8000-00000000000c'::uuid, 'student_entrepreneur')
+  ('5eed0000-0000-4000-8000-00000000000c'::uuid, 'student_entrepreneur'),
+  -- Deliberately given NO professional_profiles row below — they start at
+  -- /onboarding step 1.
+  ('5eed0000-0000-4000-8000-00000000000d'::uuid, 'sole_trader'),
+  ('5eed0000-0000-4000-8000-00000000000e'::uuid, 'student_entrepreneur')
 ) AS sub(user_id, subtype)
 WHERE p.id = sub.user_id;
 

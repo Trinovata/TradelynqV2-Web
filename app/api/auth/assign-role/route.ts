@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { checkRateLimit, identifierFrom } from '@/lib/rate-limit'
-import { requireAuth } from '@/lib/access/api'
+import { requireAuth, type AuthContext } from '@/lib/access/api'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { err, ok } from '@/lib/api/errors'
 import { logger } from '@/lib/utils/logger'
@@ -196,5 +196,30 @@ export async function POST(request: Request) {
     isFirstSelection,
   })
 
-  return ok({ role, subtype: subtype ?? null, redirectTo: ROLE_HOME[role as Role] })
+  return ok({
+    role,
+    subtype: subtype ?? null,
+    redirectTo: await postAssignmentHome(access, role),
+  })
+}
+
+/**
+ * Where to send someone the moment their role is set.
+ *
+ * A new professional has no storefront yet — `ROLE_HOME.professional` is the
+ * workspace dashboard, which cannot render without one. Sending them to
+ * onboarding is the difference between a working signup and a redirect loop.
+ * Someone switching BACK to professional already has a profile, so they land
+ * where they expect.
+ */
+async function postAssignmentHome(access: AuthContext, role: 'customer' | 'professional') {
+  if (role !== 'professional') return ROLE_HOME[role as Role]
+
+  const { data } = await access.supabase
+    .from('professional_profiles')
+    .select('listing_status')
+    .eq('user_id', access.userId)
+    .maybeSingle()
+
+  return data && data.listing_status !== 'draft' ? ROLE_HOME.professional : '/onboarding'
 }

@@ -355,6 +355,18 @@ export const CURRENT_LEGAL_VERSIONS: Readonly<Record<LegalDocument, string>> = {
 export const CUSTOMER_CONTACT_LEGAL = ['privacy', 'terms', 'reviews'] as const
 
 /**
+ * The documents a professional must have accepted before a storefront can be
+ * submitted for review (`copy-professional.md §4.0`: "Terms of Service,
+ * Professional Agreement and Privacy Policy").
+ *
+ * `eula` is the User Agreement, which is the professional-facing document the
+ * deck calls the Professional Agreement — the same file `/legal/eula` renders.
+ * Reviews policy is excluded: it binds the person WRITING a review, and a
+ * professional accepts it when they first respond to one.
+ */
+export const PROFESSIONAL_ONBOARDING_LEGAL = ['privacy', 'terms', 'eula'] as const
+
+/**
  * Requires that the in-force version of each named document has been accepted.
  *
  * Returns the missing document types so the client can render the acceptance

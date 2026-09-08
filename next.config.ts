@@ -230,6 +230,19 @@ const nextConfig: NextConfig = {
       },
       // Google OAuth profile pictures.
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      // Local Supabase (`npx supabase start`) serves storage over plain HTTP on
+      // 127.0.0.1. Development only — an uploaded photo that 500s the moment it
+      // appears in the onboarding preview makes the flow untestable locally.
+      ...(process.env.NODE_ENV === 'development'
+        ? ([
+            {
+              protocol: 'http' as const,
+              hostname: '127.0.0.1',
+              port: '54321',
+              pathname: '/storage/v1/object/public/**',
+            },
+          ] as const)
+        : []),
       //
       // NOT carried over from V1: images.unsplash.com and i.pravatar.cc, which served
       // placeholder professionals and fake avatars. V2 does not render invented supply

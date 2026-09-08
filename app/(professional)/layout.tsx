@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { requireProfessional } from '@/lib/access/api'
+import { requireProfessional, requireRole } from '@/lib/access/api'
 import { loginRedirect } from '@/lib/routes'
 import { WorkspaceSidebar } from '@/components/professional/WorkspaceSidebar'
 import { WorkspaceTabBar } from '@/components/professional/WorkspaceTabBar'
@@ -20,13 +20,23 @@ import { Toaster } from '@/components/ui/Toast'
  * to decide which tools show a lock — the tier flows down to both navigations as
  * a plain prop, keeping those components client-side and free of data access.
  *
- * A failure means the visitor is not a professional (anonymous, a customer, or
- * an unfinished onboarding). We bounce to login rather than render a shell they
- * cannot use; login routes an already-authenticated user on to their own home.
+ * A failure has two very different causes and they need different answers. If
+ * the visitor is a professional whose storefront does not exist yet, they have
+ * not finished onboarding — send them there. If they are anonymous or a
+ * customer, send them to login, which routes an authenticated user on to their
+ * own home.
+ *
+ * Collapsing both into a login redirect (as this did) produced a loop: a
+ * professional who had just picked their role had no profile row, login saw a
+ * valid session and sent them back to /dashboard, and around it went. Nobody
+ * could join the platform.
  */
 export default async function ProfessionalLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireProfessional()
-  if (!ctx.ok) redirect(loginRedirect('/dashboard'))
+  if (!ctx.ok) {
+    const role = await requireRole(['professional'])
+    redirect(role.ok ? '/onboarding' : loginRedirect('/dashboard'))
+  }
 
   // The shell leads with the professional's own identity — whose workspace this
   // is — the way a premium SaaS tool does, plus the live credit balance the
